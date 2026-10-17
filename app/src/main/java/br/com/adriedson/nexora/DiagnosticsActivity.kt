@@ -92,14 +92,17 @@ class DiagnosticsActivity : AppCompatActivity() {
                             "Nexora: ~${snapshot.processPssMiB} MiB (PSS)" + if (snapshot.lowMemory) " • MEMÓRIA BAIXA" else ""
                         memoryGauge.progress = if (snapshot.totalMiB > 0) (used * 100 / snapshot.totalMiB).toInt().coerceIn(0,100) else 0
                         batteryText.text = "Bateria: " + (snapshot.batteryC?.let { "%.1f °C".format(Locale("pt", "BR"), it) } ?: "indisponível") +
-                            " • pressão térmica: ${snapshot.thermalText}"
+                            "\nEstado térmico do Android: ${ThermalDisplay.status(snapshot.thermalText, snapshot.thermalStatusCode)}" +
+                            "\nMargem térmica: ${ThermalDisplay.headroom(snapshot.thermalHeadroom)} (não é temperatura da CPU)"
                     }
                     val now = android.os.SystemClock.elapsedRealtime()
                     if (now - lastRecordedAt >= 15_000 && snapshot != null) {
                         lastRecordedAt = now
                         DiagnosticEvents.record(applicationContext, "device.sample",
                             "pssMiB=${snapshot.processPssMiB} ramAvailableMiB=${snapshot.availableMiB} " +
-                            "cpuAppPct=${cpuReading?.allCorePercent?.toInt() ?: -1} thermal=${snapshot.thermalText}")
+                            "cpuAppPct=${cpuReading?.allCorePercent?.toInt() ?: -1} " +
+                                "thermal=${snapshot.thermalText} thermalRaw=${snapshot.thermalStatusCode ?: -1} " +
+                                "headroom=${snapshot.thermalHeadroom ?: "NA"}")
                     }
                     refreshEvents()
                     delay(3000L)

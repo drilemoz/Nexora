@@ -1,3 +1,12 @@
+# Nexora 0.1.0-alpha.15
+
+- Painel local de desempenho redesenhado, compacto e expansível.
+- Bateria não é CPU: leitura do estado térmico Android com código numérico e headroom da API 30+ quando suportado.
+- Barra de RAM mostra disponibilidade medida; indicação indeterminada durante a geração, sem porcentagem falsa.
+- Redução de texto repetitivo durante espera, visual consistente com os temas.
+- Sem mudança de motor GGUF, modelos, assinatura ou histórico.
+- Build Android e validação física pendentes.
+
 # Nexora 0.1.0-alpha.14
 
 - Nome amigável automático para arquivos GGUF conhecidos e personalização local por modelo.

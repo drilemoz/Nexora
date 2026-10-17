@@ -1,3 +1,13 @@
+# Changelog Nexora
+
+## 0.1.0-alpha.15 (versionCode 15)
+- Painel de desempenho compacto com velocidade, PSS, temperatura da bateria, RAM disponível real e barra referente à RAM, não à velocidade.
+- Expansão de detalhes com leitura térmica crua do Android, margem térmica se suportada, versão de métricas nativas, pico de PSS e identificação completa do GGUF.
+- Progresso de inferência somente indeterminado durante a geração, sem porcentagens fictícias.
+- Diagnóstico e painel de recursos mostram separadamente bateria e estado térmico; eventos incluem código térmico bruto e headroom quando disponível.
+- Leituras continuam periódicas apenas com conversa/diagnóstico visível, sem serviços de fundo, usando temas existentes.
+- Compilação Android completa e teste no aparelho ainda pendentes.
+
 # Histórico Nexora
 
 ## 0.1.0-alpha.14 • 17/10/2026

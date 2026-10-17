@@ -1,6 +1,6 @@
 # Nexora • Regras de desenvolvimento
 - App Android nativo Kotlin, GGUF offline em CPU via llama.cpp. Internet somente para download explícito de modelos.
-- Versão atual: `0.1.0-alpha.14` (`versionCode 14`). Próxima: `0.1.0-alpha.15` (`versionCode 15`).
+- Versão atual: `0.1.0-alpha.15` (`versionCode 15`). Próxima: `0.1.0-alpha.16` (`versionCode 16`).
 - Em cada alteração, incrementar sequencialmente `versionName` e `versionCode`; sincronizar README, CHANGELOG, docs/VERSIONING, docs/RELEASE_NOTES, workflow e identidade.
 - Identidade definitiva desde alpha.6: `br.com.adriedson.nexora`. Não restaurar o package antigo.
 - As quatro credenciais de assinatura permanecem opcionais via GitHub Secrets; nunca distribuir keystore nem senhas no repositório.
@@ -18,3 +18,5 @@
 - Alpha.13: identificar término por EOG/limite/erro via contadores nativos, evitar "resposta concluída" quando a saída é cortada; cálculo decimal local apenas para expressão explícita e inequívoca.
 
 - Alpha.14: apelidos são apenas apresentação; manter nome real de GGUF em ModelSession, ChatStore, ModelStartup e diagnósticos.
+
+- Alpha.15: estado térmico do Android sempre rotulado como estado do sistema com código bruto; bateria separada, headroom somente quando suportado; painel compacto expande sob demanda. Nunca inventar temperatura da CPU nem progresso de resposta.

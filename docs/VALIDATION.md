@@ -1,3 +1,11 @@
+# Validação 0.1.0-alpha.15
+
+- Validar layout compacto e expansão nos temas claro, escuro e AMOLED em aparelho, com teclado e fontes ampliadas.
+- Verificar leitura da bateria versus status bruto Android e headroom NaN/indisponível; não misturar unidades nem interpretar headroom como CPU °C.
+- Verificar RAM disponível e seu percentual apenas se total > 0, atualizações a cada 5s com Activity visível.
+- Conferir progresso indeterminado somente durante geração, sem porcentagem inventada.
+- Executar ThermalDisplayTest e suite Gradle/JNI na CI; build completo pendente neste ambiente.
+
 # Validação 0.1.0-alpha.14
 
 - Verificar nomes Qwen3-4B / Qwen_Qwen3-1.7B, alias de usuário e rejeição de nomes inválidos.

@@ -56,6 +56,17 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var performanceMemory: TextView
     private lateinit var performanceThermal: TextView
     private lateinit var performanceNote: TextView
+    private lateinit var performancePss: TextView
+    private lateinit var performanceBattery: TextView
+    private lateinit var performanceRamLabel: TextView
+    private lateinit var performanceThermalSummary: TextView
+    private lateinit var performanceRamBar: ProgressBar
+    private lateinit var performanceTitleStatus: TextView
+    private lateinit var performanceToggle: TextView
+    private lateinit var performanceDetails: LinearLayout
+    private lateinit var performanceModel: TextView
+    private lateinit var performanceCpu: TextView
+    private val cpuMeter = CpuMeter()
     private val meter = GenerationMeter()
     private var lastNativeStats: NativeGenerationStats? = null
     private var peakPssMiB: Long = 0
@@ -92,6 +103,24 @@ class ChatActivity : AppCompatActivity() {
         performanceMemory = findViewById(R.id.performanceMemory)
         performanceThermal = findViewById(R.id.performanceThermal)
         performanceNote = findViewById(R.id.performanceNote)
+        performancePss = findViewById(R.id.performancePss)
+        performanceBattery = findViewById(R.id.performanceBattery)
+        performanceRamLabel = findViewById(R.id.performanceRamLabel)
+        performanceThermalSummary = findViewById(R.id.performanceThermalSummary)
+        performanceRamBar = findViewById(R.id.performanceRamBar)
+        performanceTitleStatus = findViewById(R.id.performanceTitleStatus)
+        performanceToggle = findViewById(R.id.performanceToggle)
+        performanceDetails = findViewById(R.id.performanceDetails)
+        performanceModel = findViewById(R.id.performanceModel)
+        performanceCpu = findViewById(R.id.performanceCpu)
+        val expanded = prefs.getBoolean("performance_details_expanded", false)
+        updatePerformanceExpansion(expanded)
+        performanceToggle.setOnClickListener {
+            val next = performanceDetails.visibility != View.VISIBLE
+            updatePerformanceExpansion(next)
+            prefs.edit().putBoolean("performance_details_expanded", next).apply()
+            displayMeter()
+        }
         send = findViewById(R.id.sendMessage)
         stop = findViewById(R.id.stopGeneration)
         mode = findViewById(R.id.thinkMode)
@@ -146,6 +175,7 @@ class ChatActivity : AppCompatActivity() {
         stop.setOnClickListener { generationCancelReason = "user"; status.text = "Interrompendo geração..."; generation?.cancel() }
         updateMode()
         renderPdfs()
+        displayMeter()
         refresh()
         prepareChatContext()
         lifecycleScope.launch {
@@ -259,6 +289,7 @@ class ChatActivity : AppCompatActivity() {
         DiagnosticEvents.record(this, "inference.start", "model=${ModelSession.currentName()?.take(80) ?: "unknown"} thinking=$thinking")
         displayMeter()
         busy = true
+        displayMeter()
         status.text = if (thinking) "Nexora raciocinando no dispositivo..." else "Nexora gerando resposta..."
         refresh()
         val qwen = ModelSession.currentName()?.contains("qwen3", true) == true
@@ -340,36 +371,44 @@ class ChatActivity : AppCompatActivity() {
         updateMode()
     }
 
+    private fun updatePerformanceExpansion(expanded: Boolean) {
+        performanceDetails.visibility = if (expanded) View.VISIBLE else View.GONE
+        performanceToggle.text = if (expanded) "⌃" else "⌄"
+        performanceToggle.contentDescription = if (expanded) "Recolher informações de desempenho" else "Expandir informações de desempenho"
+    }
+
     private fun displayMeter() {
         val reading = meter.reading(SystemClock.elapsedRealtimeNanos())
         performanceSpeed.text = lastNativeStats?.tokensPerSecond?.let {
-            String.format(Locale("pt", "BR"), "%.1f tok/s (nativo)", it)
+            String.format(Locale("pt", "BR"), "%.1f tok/s", it)
         } ?: reading.fragmentsPerSecond?.let {
             String.format(Locale("pt", "BR"), "%.1f frag./s", it)
-        } ?: "— frag./s"
-        val rate = lastNativeStats?.tokensPerSecond ?: reading.fragmentsPerSecond
-        performanceGauge.progress = (rate ?: 0.0).coerceIn(0.0, 30.0).toInt()
-        performanceGrade.text = when {
-            rate == null -> "Aguardando amostras"
-            rate < 3.0 -> "Geração lenta"
-            rate < 10.0 -> "Geração utilizável"
-            rate < 20.0 -> "Geração boa"
-            else -> "Geração fluida"
+        } ?: "—"
+        performanceTitleStatus.text = when {
+            busy -> "Gerando"
+            lastNativeStats != null -> "Última resposta"
+            reading.fragments > 0 -> "Interrompida"
+            else -> "Em espera"
         }
+        // Nunca simular progresso percentual de resposta; o modelo pode parar antes do limite.
+        performanceGauge.visibility = if (busy) View.VISIBLE else View.GONE
+        performanceGauge.isIndeterminate = busy
         performanceLatency.text = reading.timeToFirstSeconds?.let {
-            String.format(Locale("pt", "BR"), "%.2f s até resposta", it)
-        } ?: "Aguardando resposta"
+            String.format(Locale("pt", "BR"), "Primeiro fragmento: %.2f s", it)
+        } ?: "Primeiro fragmento: —"
+        performanceGrade.text = lastNativeStats?.let { native ->
+            "Tokens nativos: ${native.generatedTokens} • geração: ${native.generationMs} ms"
+        } ?: "Fragmentos exibidos: ${reading.fragments} • não equivalem necessariamente a tokens"
         performanceNote.text = lastNativeStats?.let { native ->
-            "${native.generatedTokens} tokens nativos (inclui EOG se houver) • prompt ${native.promptTokens} tokens / ${native.promptMs} ms"
-        } ?: when {
-            reading.fragments == 0 -> "A velocidade aparece após os primeiros fragmentos gerados."
-            reading.fragments < 2 -> "Recebendo o primeiro fragmento..."
-            else -> "${reading.fragments} fragmentos (estimativa enquanto gera)"
-        }
+            "Prompt: ${native.promptTokens} tokens / ${native.promptMs} ms • motivo: ${native.reason}"
+        } ?: if (reading.fragments == 0) "Medições de velocidade aparecem após gerar texto." else
+            "Velocidade de fragmentos é provisória; tokens/s reais após concluir."
+        performanceModel.text = "Modelo: ${ModelSession.currentDisplayName(this) ?: "Nenhum"}\n" +
+            "GGUF: ${ModelSession.currentName() ?: "nenhum"}"
     }
 
     private suspend fun sampleDevice() {
-        // Debug.getMemoryInfo pode bloquear; amostrar fora da thread principal.
+        // Amostragem sob demanda fora da thread de UI. Headroom não é temperatura.
         withContext(Dispatchers.Default) { runCatching { DeviceSampler.capture(applicationContext) } }.onSuccess { data ->
             if (busy) {
                 peakPssMiB = maxOf(peakPssMiB, data.processPssMiB)
@@ -378,16 +417,39 @@ class ChatActivity : AppCompatActivity() {
                 if (now - lastInferenceSampleMs >= 15_000L) {
                     lastInferenceSampleMs = now
                     DiagnosticEvents.record(this@ChatActivity, "inference.sample",
-                        "pssMiB=${data.processPssMiB} availableMiB=${data.availableMiB} thermal=${data.thermalText}")
+                        "pssMiB=${data.processPssMiB} availableMiB=${data.availableMiB} " +
+                            "thermalRaw=${data.thermalStatusCode ?: -1} " +
+                            "headroom=${data.thermalHeadroom ?: "NA"}")
                 }
             }
-            performanceMemory.text = "Nexora ~${data.processPssMiB} MiB PSS  •  RAM disponível ${data.availableMiB}/${data.totalMiB} MiB" +
-                if (data.lowMemory) "  ⚠ memória baixa" else ""
-            val temp = data.batteryC?.let { String.format(Locale("pt", "BR"), "%.1f °C", it) } ?: "indisponível"
-            performanceThermal.text = "Bateria $temp  •  pressão térmica ${data.thermalText}"
+            performancePss.text = "${data.processPssMiB} MiB"
+            performanceBattery.text = data.batteryC?.let {
+                String.format(Locale("pt", "BR"), "%.1f °C", it)
+            } ?: "—"
+            performanceRamLabel.text = "RAM disponível: ${data.availableMiB}/${data.totalMiB} MiB"
+            performanceRamBar.progress = ThermalDisplay.availableRamProgress(data.availableMiB, data.totalMiB)
+            performanceThermalSummary.text = ThermalDisplay.status(data.thermalText, data.thermalStatusCode)
+            if (performanceDetails.visibility == View.VISIBLE) {
+                val cpuReading = cpuMeter.sample()
+                performanceCpu.text = cpuReading?.let {
+                    String.format(Locale("pt", "BR"),
+                        "CPU Nexora: %.1f%% da capacidade de %d núcleos", it.allCorePercent, it.cores)
+                } ?: "CPU Nexora: aguardando segunda amostra"
+            }
+            performanceMemory.text = "Nexora: ${data.processPssMiB} MiB PSS • RAM disponível: ${data.availableMiB}/${data.totalMiB} MiB" +
+                (if (data.lowMemory) " • Android: memória baixa" else "") +
+                (if (peakPssMiB > 0) "\nPico PSS observado durante geração: $peakPssMiB MiB" else "")
+            performanceThermal.text = "Estado térmico informado pelo Android: ${ThermalDisplay.status(data.thermalText, data.thermalStatusCode)}" +
+                "\nMargem térmica: ${ThermalDisplay.headroom(data.thermalHeadroom)}" +
+                "\nBateria: ${performanceBattery.text} (não é temperatura da CPU)"
         }.onFailure {
+            performancePss.text = "—"
+            performanceBattery.text = "—"
+            performanceRamLabel.text = "RAM indisponível"
+            performanceRamBar.progress = 0
+            performanceThermalSummary.text = "Android: indisponível"
             performanceMemory.text = "Medição de memória indisponível"
-            performanceThermal.text = "Temperatura e pressão térmica indisponíveis"
+            performanceThermal.text = "Estado térmico indisponível"
         }
     }
 

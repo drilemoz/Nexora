@@ -50,7 +50,9 @@ object ResourcePanel {
                 if (snap != null) {
                     lines[1].text = "◈ RAM: ${snap.availableMiB} / ${snap.totalMiB} MiB disponíveis\n   Nexora: ${snap.processPssMiB} MiB PSS"
                     lines[2].text = "◈ Bateria: ${snap.batteryC?.let { String.format(Locale("pt", "BR"), "%.1f °C", it) } ?: "indisponível"}"
-                    lines[3].text = "◈ Pressão térmica: ${snap.thermalText}"
+                    lines[3].text = "◈ ${ThermalDisplay.status(snap.thermalText, snap.thermalStatusCode)}" +
+                        "\n   Margem térmica: ${ThermalDisplay.headroom(snap.thermalHeadroom)}" +
+                        "\n   Estado do Android, não temperatura da CPU"
                 }
                 delay(2500)
             }
