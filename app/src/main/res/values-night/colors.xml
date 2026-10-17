@@ -1,0 +1,5 @@
+<resources>
+ <color name="surface">#0D111B</color><color name="panel">#171D2B</color>
+ <color name="label">#F1F3FC</color><color name="muted">#9EACC2</color>
+ <color name="accent">#9BA8FF</color><color name="border">#2B3547</color><color name="tint">#232F4A</color>
+</resources>

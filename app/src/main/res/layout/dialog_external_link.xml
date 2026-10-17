@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="22dp" android:background="?attr/uiPanel">
+ <ImageView android:layout_width="44dp" android:layout_height="44dp" android:src="@drawable/ic_external" android:tint="?attr/uiAccent" android:contentDescription="Link externo"/>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Você está saindo da Nexora" android:textStyle="bold" android:textSize="19sp" android:textColor="?attr/uiLabel" android:layout_marginTop="12dp"/>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="A página do modelo será aberta no navegador. A Nexora continua disponível e suas conversas permanecem locais." android:textColor="?attr/uiMuted" android:textSize="14sp" android:layout_marginTop="9dp"/>
+ <TextView android:id="@+id/externalDomain" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="huggingface.co" android:textColor="?attr/uiAccent" android:textSize="13sp" android:layout_marginTop="12dp"/>
+</LinearLayout>

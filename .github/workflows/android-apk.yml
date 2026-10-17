@@ -1,0 +1,97 @@
+name: Gerar APK Nexora
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths-ignore: ['**.md']
+  pull_request:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK (sem pacote tools descontinuado)
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+      - name: Android NDK + CMake
+        run: |
+          sdkmanager --install 'platforms;android-36' 'ndk;29.0.13113456' 'cmake;3.31.6'
+      - name: Preparar engine nativa fixa
+        run: bash scripts/bootstrap.sh
+      - name: Testes de unidade
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+      # Assinar somente builds confiáveis (push no ramo principal ou execução manual).
+      # Nunca disponibilizar a chave privada a código executado por pull_request.
+      - name: Preparar assinatura privada opcional
+        id: signing
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          count=0
+          for value in "$KEYSTORE_BASE64" "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD"; do
+            if [[ -n "$value" ]]; then count=$((count + 1)); fi
+          done
+          if [[ "$count" -eq 0 ]]; then
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'Assinatura estavel nao configurada: Debug padrao.'
+          elif [[ "$count" -ne 4 ]]; then
+            echo 'Erro: informe todos os quatro Secrets ou nenhum.' >&2
+            exit 1
+          else
+            umask 077
+            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/nexora-signing.p12"
+            test -s "$RUNNER_TEMP/nexora-signing.p12"
+            echo "NEXORA_KEYSTORE_PATH=$RUNNER_TEMP/nexora-signing.p12" >> "$GITHUB_ENV"
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+            echo 'Assinatura estavel habilitada.'
+          fi
+      - name: Compilar APK Debug ARM64
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew :app:assembleDebug --stacktrace --max-workers=2
+      - name: Compilar APK Release assinado
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease --stacktrace --max-workers=2
+      - name: Disponibilizar APK Debug
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexora-v0.1.0-alpha.6-apk-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Disponibilizar APK Release
+        if: success() && steps.signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexora-v0.1.0-alpha.6-apk-release-assinado
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remover keystore temporaria
+        if: always()
+        run: rm -f "$RUNNER_TEMP/nexora-signing.p12"

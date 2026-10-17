@@ -1,0 +1,29 @@
+<resources>
+ <style name="Theme.Nexora" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+  <item name="colorPrimary">@color/accent</item><item name="colorOnPrimary">#FFFFFF</item><item name="colorSecondary">@color/accent</item>
+  <item name="colorSurface">@color/panel</item><item name="colorOnSurface">@color/label</item>
+  <item name="android:fontFamily">sans</item><item name="android:windowBackground">?attr/uiSurface</item>
+  <item name="android:statusBarColor">?attr/uiSurface</item><item name="android:navigationBarColor">?attr/uiSurface</item>
+  <item name="android:windowLightStatusBar">true</item><item name="android:windowLightNavigationBar">true</item>
+  <item name="uiSurface">@color/surface</item><item name="uiPanel">@color/panel</item>
+  <item name="uiLabel">@color/label</item><item name="uiMuted">@color/muted</item>
+  <item name="uiAccent">@color/accent</item><item name="uiBorder">@color/border</item>
+  <item name="uiTint">@color/tint</item>
+  <item name="materialButtonStyle">@style/Widget.Nexora.Button</item>
+ </style>
+ <style name="Widget.Nexora.Button" parent="Widget.MaterialComponents.Button">
+  <item name="cornerRadius">16dp</item><item name="android:minHeight">50dp</item>
+  <item name="android:textAllCaps">false</item>
+ </style>
+ <style name="Theme.Nexora.Amoled" parent="Theme.Nexora">
+  <item name="uiSurface">@color/amoled_surface</item><item name="uiPanel">@color/amoled_panel</item>
+  <item name="uiLabel">@color/amoled_label</item><item name="uiMuted">@color/amoled_muted</item>
+  <item name="uiAccent">@color/amoled_accent</item><item name="uiBorder">@color/amoled_border</item>
+  <item name="uiTint">@color/amoled_tint</item>
+  <item name="colorPrimary">@color/amoled_accent</item><item name="colorSurface">@color/amoled_panel</item>
+  <item name="colorOnSurface">@color/amoled_label</item>
+  <item name="android:statusBarColor">#000000</item><item name="android:navigationBarColor">#000000</item>
+  <item name="android:windowLightStatusBar">false</item><item name="android:windowLightNavigationBar">false</item>
+  <item name="android:windowBackground">#000000</item>
+ </style>
+ </resources>

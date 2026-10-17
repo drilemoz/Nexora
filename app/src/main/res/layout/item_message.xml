@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingTop="5dp" android:paddingBottom="5dp">
+    <TextView android:id="@+id/role" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingBottom="3dp" android:textColor="?attr/uiAccent" android:textSize="11sp" android:textStyle="bold"/>
+    <TextView android:id="@+id/content" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="?attr/uiPanel" android:padding="12dp" android:textColor="?attr/uiLabel"
+        android:textSize="15sp" android:textIsSelectable="true" />
+</LinearLayout>

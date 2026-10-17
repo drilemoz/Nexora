@@ -1,0 +1,8 @@
+<resources>
+ <color name="surface">#F7F8FC</color><color name="panel">#FFFFFF</color><color name="label">#182339</color>
+ <color name="muted">#68768D</color><color name="accent">#525BE9</color><color name="border">#E3E7F0</color><color name="tint">#EDF0FF</color>
+ <color name="amoled_surface">#000000</color><color name="amoled_panel">#0C0F16</color>
+ <color name="amoled_label">#F1F4FF</color><color name="amoled_muted">#9DA9BE</color>
+ <color name="amoled_accent">#A7B4FF</color><color name="amoled_border">#242A35</color><color name="amoled_tint">#161B2B</color>
+ <color name="nexora_icon_bg">#171B46</color>
+</resources>

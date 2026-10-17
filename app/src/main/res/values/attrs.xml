@@ -1,0 +1,6 @@
+<resources>
+ <attr name="uiSurface" format="color"/><attr name="uiPanel" format="color"/>
+ <attr name="uiLabel" format="color"/><attr name="uiMuted" format="color"/>
+ <attr name="uiAccent" format="color"/><attr name="uiBorder" format="color"/>
+ <attr name="uiTint" format="color"/>
+</resources>
