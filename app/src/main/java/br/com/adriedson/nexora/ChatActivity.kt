@@ -2,6 +2,7 @@ package br.com.adriedson.nexora
 
 import android.content.Context
 import android.content.Intent
+import com.arm.aichat.NativeGenerationStats
 import android.net.Uri
 import android.widget.LinearLayout
 import android.widget.ImageButton
@@ -56,6 +57,10 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var performanceThermal: TextView
     private lateinit var performanceNote: TextView
     private val meter = GenerationMeter()
+    private var lastNativeStats: NativeGenerationStats? = null
+    private var peakPssMiB: Long = 0
+    private var minRamAvailableMiB: Long = Long.MAX_VALUE
+    private var lastInferenceSampleMs: Long = 0
     private var samplingJob: Job? = null
     private lateinit var send: ImageButton
     private lateinit var stop: MaterialButton
@@ -235,6 +240,21 @@ class ChatActivity : AppCompatActivity() {
         messages.add(response)
         adapter.notifyItemRangeInserted(messages.size - 2, 2)
         list.scrollToPosition(messages.lastIndex)
+        // Operações aritméticas inequívocas são calculadas em decimal localmente.
+        // Nunca anunciar uma "calculadora virtual" que o modelo não executou.
+        LocalArithmetic.tryCalculate(userText)?.let { calculation ->
+            response.text = "Cálculo local verificado:\n" +
+                (if (calculation.approximate) "≈ " else "= ") + calculation.value
+            adapter.notifyItemChanged(messages.lastIndex)
+            status.text = "Cálculo realizado no aparelho • sem inferência de IA"
+            DiagnosticEvents.record(this, "math.local.ok", "approximate=${calculation.approximate}")
+            save()
+            return
+        }
+        lastNativeStats = null
+        peakPssMiB = 0
+        minRamAvailableMiB = Long.MAX_VALUE
+        lastInferenceSampleMs = 0
         meter.start(SystemClock.elapsedRealtimeNanos())
         DiagnosticEvents.record(this, "inference.start", "model=${ModelSession.currentName()?.take(80) ?: "unknown"} thinking=$thinking")
         displayMeter()
@@ -247,6 +267,7 @@ class ChatActivity : AppCompatActivity() {
         val responseIndex = messages.lastIndex
         var lastUiUpdateNs = 0L
         generationCancelReason = "none"
+        val generationLimit = if (thinking) 768 else 512
         generation = lifecycleScope.launch {
             try {
                 val pdfs = if (firstPrompt || pdfDirty) store.pdfs(chatId) else emptyList()
@@ -255,7 +276,7 @@ class ChatActivity : AppCompatActivity() {
                 firstPrompt = false
                 pdfDirty = false
                 ModelSession.engine(applicationContext)
-                    .sendUserPrompt(composed + instruction, if (thinking) 768 else 512)
+                    .sendUserPrompt(composed + instruction, generationLimit)
                     .collect { token ->
                         val nowNs = SystemClock.elapsedRealtimeNanos()
                         meter.onFragment(token, nowNs)
@@ -270,11 +291,20 @@ class ChatActivity : AppCompatActivity() {
                             lastUiUpdateNs = nowNs
                         }
                     }
+                val engineStats = ModelSession.engine(applicationContext).lastGenerationStats
+                lastNativeStats = engineStats
                 response.text = filter.finish().ifBlank { "(O modelo não produziu uma resposta final.)" }
                 displayMeter()
-                status.text = "Resposta concluída • sem conexão com servidores"
+                val outcome = GenerationOutcome.fromNative(engineStats?.reason)
+                status.text = outcome.status(generationLimit)
                 val reading = meter.reading(SystemClock.elapsedRealtimeNanos())
-                DiagnosticEvents.record(this@ChatActivity, "inference.done", "fragments=${reading.fragments} fragPerSec=${reading.fragmentsPerSecond?.toInt() ?: -1} firstSec=${reading.timeToFirstSeconds?.toInt() ?: -1}")
+                DiagnosticEvents.record(this@ChatActivity, "inference.end",
+                    "reason=${outcome.diagnostic} tokens=${engineStats?.generatedTokens ?: -1} " +
+                        "prompt=${engineStats?.promptTokens ?: -1} ppMs=${engineStats?.promptMs ?: -1} " +
+                        "tgMs=${engineStats?.generationMs ?: -1} " +
+                        "tps=${engineStats?.tokensPerSecond?.let { String.format(Locale.US, "%.2f", it) } ?: "-1"} " +
+                        "pssPeak=$peakPssMiB ramMin=${minRamAvailableMiB.takeIf { it != Long.MAX_VALUE } ?: -1}",
+                    if (outcome == GenerationOutcome.DECODE_ERROR) "ERROR" else "INFO")
             } catch (_: CancellationException) {
                 response.text = filter.finish().ifBlank { "(Geração interrompida.)" }
                 status.text = "Geração interrompida."
@@ -312,10 +342,12 @@ class ChatActivity : AppCompatActivity() {
 
     private fun displayMeter() {
         val reading = meter.reading(SystemClock.elapsedRealtimeNanos())
-        performanceSpeed.text = reading.fragmentsPerSecond?.let {
+        performanceSpeed.text = lastNativeStats?.tokensPerSecond?.let {
+            String.format(Locale("pt", "BR"), "%.1f tok/s (nativo)", it)
+        } ?: reading.fragmentsPerSecond?.let {
             String.format(Locale("pt", "BR"), "%.1f frag./s", it)
         } ?: "— frag./s"
-        val rate = reading.fragmentsPerSecond
+        val rate = lastNativeStats?.tokensPerSecond ?: reading.fragmentsPerSecond
         performanceGauge.progress = (rate ?: 0.0).coerceIn(0.0, 30.0).toInt()
         performanceGrade.text = when {
             rate == null -> "Aguardando amostras"
@@ -327,16 +359,28 @@ class ChatActivity : AppCompatActivity() {
         performanceLatency.text = reading.timeToFirstSeconds?.let {
             String.format(Locale("pt", "BR"), "%.2f s até resposta", it)
         } ?: "Aguardando resposta"
-        performanceNote.text = when {
+        performanceNote.text = lastNativeStats?.let { native ->
+            "${native.generatedTokens} tokens nativos (inclui EOG se houver) • prompt ${native.promptTokens} tokens / ${native.promptMs} ms"
+        } ?: when {
             reading.fragments == 0 -> "A velocidade aparece após os primeiros fragmentos gerados."
             reading.fragments < 2 -> "Recebendo o primeiro fragmento..."
-            else -> "${reading.fragments} fragmentos • não equivalem necessariamente a tokens"
+            else -> "${reading.fragments} fragmentos (estimativa enquanto gera)"
         }
     }
 
     private suspend fun sampleDevice() {
         // Debug.getMemoryInfo pode bloquear; amostrar fora da thread principal.
         withContext(Dispatchers.Default) { runCatching { DeviceSampler.capture(applicationContext) } }.onSuccess { data ->
+            if (busy) {
+                peakPssMiB = maxOf(peakPssMiB, data.processPssMiB)
+                minRamAvailableMiB = minOf(minRamAvailableMiB, data.availableMiB)
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastInferenceSampleMs >= 15_000L) {
+                    lastInferenceSampleMs = now
+                    DiagnosticEvents.record(this@ChatActivity, "inference.sample",
+                        "pssMiB=${data.processPssMiB} availableMiB=${data.availableMiB} thermal=${data.thermalText}")
+                }
+            }
             performanceMemory.text = "Nexora ~${data.processPssMiB} MiB PSS  •  RAM disponível ${data.availableMiB}/${data.totalMiB} MiB" +
                 if (data.lowMemory) "  ⚠ memória baixa" else ""
             val temp = data.batteryC?.let { String.format(Locale("pt", "BR"), "%.1f °C", it) } ?: "indisponível"

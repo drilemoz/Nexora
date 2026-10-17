@@ -1,4 +1,10 @@
-# Validação 0.1.0-alpha.12
+# Validação 0.1.0-alpha.13
+
+- Conjunto de verificações locais: verificação de ancoragem dos patches native/Kotlin, testes do avaliador decimal e análise de sintaxe.
+- Pendências: compilar Gradle/Android com pin do llama.cpp na CI; verificar no dispositivo campos de tokens nativos, razões de término e estabilidade de PSS.
+- Verificar especialmente EOG, geração por limite, erro JNI e cancelamento de inferência em segundo plano.
+
+## Histórico: alpha.12
 
 - Logs Build 4: :app:testDebugUnitTest, 26 testes, 2 falhas em ModelCatalogTest (esperava 3 entradas; Qwen3 4B usava main).
 - Corrigido teste para 4 entradas únicas e pin de commit Qwen3 4B; testes não desativados.
@@ -21,3 +27,8 @@
 - Código Kotlin: 38 fontes passaram na análise sintática PSI, sem erros de parser.
 - Build Android completo exige bootstrap externo do llama.cpp; não executado neste ambiente.
 - Pendências obrigatórias no dispositivo: testar cancelamento de carga, mudança de tema, fluxo de PDF, consumo de RAM e diálogo em rotação de tela.
+
+## Alpha.13 • verificações detalhadas
+- Compatibilidade upstream: revisão exata de `scripts/bootstrap.sh` é exigida; o patch é fail-fast se as âncoras não existirem. Sem git/Android SDK completos neste container; validação final da ABI no GitHub Actions.
+- `LocalArithmeticTest` e `GenerationOutcomeTest` verificam cálculo decimal e classificação de EOG/limite/erro.
+- O diagnóstico pré-alpha.13 da alpha.12 continha literal alpha.11. Agora PackageManager fornece a versão real; checar no APK.

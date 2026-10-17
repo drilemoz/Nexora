@@ -1,6 +1,13 @@
-# Nexora • v0.1.0-alpha.12 (versionCode 12)
+# Nexora • v0.1.0-alpha.13 (versionCode 13)
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+## Alpha.13: fim de geração, matemática confiável e diagnóstico real
+- Patch adicional no JNI/llama.cpp fixado: distingue fim natural (EOG), limite de tokens e erro nativo; mede quantidade real de tokens, quantidade de tokens do prompt e tempo de processamento/geração. Não confundir com os fragmentos recebidos na interface.
+- A resposta não será rotulada "concluída" quando atingir limite ou terminar por erro/desconhecido. O painel apresenta tok/s nativo ao fim da resposta e frag./s somente durante o streaming.
+- Expressões matemáticas simples iniciadas por "Quanto", "Calcule" etc. recebem avaliação decimal local, com precedência, parênteses e porcentagem, sem inventar ferramenta externa. Consultas ambíguas ou sintaxe não suportada continuam para o modelo, com risco habitual de erro.
+- Diagnóstico registra resumo nativo da geração e amostras de PSS/RAM/temperatura a cada 15s enquanto o chat está aberto, sem conteúdo das mensagens. Versão no JSON vem do PackageManager, corrigindo o antigo valor fixo alpha.11.
+- Nenhuma mudança nas threads ou nas credenciais/identidade. Build completo e teste físico pendentes.
 
 ## Alpha.12: desempenho e publicacao unica de APK
 - GitHub Actions gera apenas um APK de instalacao: Release assinado quando os quatro Secrets estao presentes, Debug sem Secrets. A mesma assinatura estavel continua valida.
@@ -50,7 +57,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.12-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.12-apk-debug` (sem Secrets).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.13-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.13-apk-debug` (sem Secrets).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

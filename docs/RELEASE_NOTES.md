@@ -1,4 +1,12 @@
-# Nexora 0.1.0-alpha.12
+# Nexora 0.1.0-alpha.13
+
+- Diferencia saída concluída (EOG) de resposta incompleta ao atingir limite de tokens ou erro de decode.
+- Mostra tokens/s nativos medidos após geração e registra tempos de prompt/geração, quantidade de tokens e razão de término.
+- Calcula localmente apenas expressões aritméticas explícitas e seguras, identificando aproximações decimais.
+- Telemetria limitada de PSS/RAM/estado térmico durante a inferência; diagnóstico obtém versão real do pacote instalado.
+- Interface, PDF e assinatura preservados; validação em aparelho pendente.
+
+## Versão anterior 0.1.0-alpha.12
 
 - Novo ícone Diagnóstico na tela inicial: CPU do processo, RAM do sistema, memória Nexora, bateria, pressão térmica.
 - Log local de eventos de inferência, PDF, modelo e falhas, com exportação JSON e limpeza.

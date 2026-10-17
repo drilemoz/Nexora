@@ -53,6 +53,15 @@
 
 # CHANGELOG
 
+## 0.1.0-alpha.13 • 17/10/2026
+- Contadores nativos de tokens e tempos por geração; identifica EOG/limite/erro no JNI com patch auditável sobre revisão fixa do llama.cpp.
+- Corrige estado indevido "Resposta concluída" quando o modelo apenas esgotou o limite de tokens; falha de processamento de prompt não é tratada como sucesso.
+- Calculadora aritmética determinística para pedidos simples e explícitos, sem envio de comandos nem execução de código de terceiros.
+- Diagnóstico agora obtém versionName/versionCode do APK instalado (não de texto hardcoded) e registra PSS/RAM durante geração de forma limitada.
+- Mantém context window 4096, threads, temas, histórico, GGUF, assinatura e workflow com um único APK.
+- Verificações locais não substituem compilação Android e validação em aparelho.
+
+
 ## 0.1.0-alpha.7 • Nexora
 - Rebranding completo: nome, applicationId, namespace, ícone adaptativo e identidade visual.
 - Tela inicial dedicada aos modelos e botão Conversar; chat independente com nome do GGUF no topo.
