@@ -13,6 +13,10 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CancellationException
@@ -38,6 +42,8 @@ class ModelsActivity : AppCompatActivity() {
     private lateinit var manage: MaterialButton
     private lateinit var catalog: MaterialButton
     private var busy = false
+    private lateinit var loadDialog: ModelLoadingDialog
+    private var awaitingModel: String? = null
     private val picker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importModel(uri)
     }
@@ -46,6 +52,7 @@ class ModelsActivity : AppCompatActivity() {
         activeTheme = ThemePreferences.applyBeforeCreate(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_models)
+        loadDialog = ModelLoadingDialog(this)
         status = findViewById(R.id.modelStatus)
         detail = findViewById(R.id.deviceStatus)
         message = findViewById(R.id.stateLabel)
@@ -55,8 +62,14 @@ class ModelsActivity : AppCompatActivity() {
         storageUsedBar = findViewById(R.id.storageUsedBar)
         modelList = findViewById(R.id.installedModelList)
         importer = findViewById(R.id.importModel)
+        importer.setTextColor(ThemePreferences.accentColor(this))
+        importer.iconTint = android.content.res.ColorStateList.valueOf(ThemePreferences.accentColor(this))
         manage = findViewById(R.id.manageModels)
+        manage.setTextColor(ThemePreferences.accentColor(this))
+        manage.iconTint = android.content.res.ColorStateList.valueOf(ThemePreferences.accentColor(this))
         catalog = findViewById(R.id.openCatalog)
+        catalog.setTextColor(ThemePreferences.accentColor(this))
+        catalog.iconTint = android.content.res.ColorStateList.valueOf(ThemePreferences.accentColor(this))
         findViewById<View>(R.id.backFromModels).setOnClickListener {
             if (!busy) finish()
         }
@@ -68,7 +81,43 @@ class ModelsActivity : AppCompatActivity() {
             else toast("Carregue um modelo em Modelos antes de conversar")
         }
         savedInstanceState?.getString(STATE_MESSAGE)?.let { message.text = it }
+        awaitingModel = savedInstanceState?.getString("awaiting_model")
         refresh()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (isActive) {
+                    val state = ModelSession.loadState.value
+                    loadDialog.render(state)
+                    if (awaitingModel != null) {
+                        when (state) {
+                            is ModelLoadState.Ready -> if (state.name == awaitingModel) {
+                                awaitingModel = null
+                                startActivity(Intent(this@ModelsActivity, MainActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+                                finish()
+                            }
+                            is ModelLoadState.Problem -> {
+                                awaitingModel = null
+                                message.text = state.detail
+                                refresh()
+                            }
+                            is ModelLoadState.Idle -> {
+                                awaitingModel = null
+                                message.text = "Carregamento cancelado."
+                                refresh()
+                            }
+                            else -> Unit
+                        }
+                    }
+                    delay(600)
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        if (::loadDialog.isInitialized) loadDialog.dismiss()
+        super.onDestroy()
     }
 
     override fun onResume() {
@@ -96,18 +145,11 @@ class ModelsActivity : AppCompatActivity() {
                 .setNegativeButton("Fechar", null).show()
             return
         }
-        val labels = all.map { "${it.name}\n${it.length() / 1_048_576} MiB" } +
+        val labels = all.map { "${it.name}\n${StorageSummary.size(it.length())}" } +
             if (ModelSession.isReady(this)) listOf("Descarregar modelo ativo • liberar RAM") else emptyList()
-        MaterialAlertDialogBuilder(this).setTitle("Modelos instalados")
+        MaterialAlertDialogBuilder(this).setTitle("Biblioteca de modelos")
             .setItems(labels.toTypedArray()) { _, index ->
-                if (index == all.size) unload() else {
-                    val selected = all[index]
-                    MaterialAlertDialogBuilder(this).setTitle(selected.name)
-                        .setMessage("Carregar para conversar ou remover esta cópia do aparelho.")
-                        .setPositiveButton("Carregar") { _, _ -> load(selected) }
-                        .setNeutralButton("Excluir") { _, _ -> delete(selected) }
-                        .setNegativeButton("Voltar", null).show()
-                }
+                if (index == all.size) unload() else showModelDetails(all[index])
             }.setNegativeButton("Fechar", null).show()
     }
 
@@ -116,33 +158,22 @@ class ModelsActivity : AppCompatActivity() {
             toast("Descarregue o modelo antes de excluir")
             return
         }
-        MaterialAlertDialogBuilder(this).setTitle("Excluir ${file.name}?")
-            .setMessage("O arquivo privado será apagado. Esta ação não exclui o original de outra pasta.")
-            .setPositiveButton("Excluir") { _, _ ->
-                val removed = file.delete()
-                if (removed) ModelStartup.forgetIfMatches(this, file)
-                toast(if (removed) "Modelo removido" else "Falha ao excluir modelo")
-                refresh()
-            }.setNegativeButton("Cancelar", null).show()
+        NexoraDialogs.confirmDelete(this, "Excluir ${file.name}?",
+            "Esta cópia privada será apagada. O arquivo original selecionado na pasta Downloads não será afetado.") {
+            val removed = file.delete()
+            if (removed) ModelStartup.forgetIfMatches(this, file)
+            toast(if (removed) "Modelo removido" else "Falha ao excluir modelo")
+            refresh()
+        }
     }
 
     private fun load(file: File) {
         if (busy || ModelSession.isLoading()) { toast("Já há um modelo sendo carregado"); return }
-        busy = true
-        message.text = "Carregando ${file.name} na memória..."
-        refresh()
-        lifecycleScope.launch {
-            try {
-                ModelSession.load(applicationContext, file)
-                message.text = "Pronto! Toque em Conversar para começar."
-            } catch (e: Exception) {
-                message.text = "Falha ao carregar: ${e.localizedMessage?.take(140)}"
-                toast("Modelo não carregado")
-            } finally {
-                busy = false
-                refresh()
-            }
-        }
+        if (ModelSession.startManualLoad(applicationContext, file)) {
+            awaitingModel = file.name
+            message.text = "Carregando ${file.name}..."
+            loadDialog.render(ModelSession.loadState.value)
+        } else toast("Aguarde a operação atual terminar")
     }
 
     private fun unload() {
@@ -257,6 +288,9 @@ class ModelsActivity : AppCompatActivity() {
                 maxLines = 3
             }
             row.addView(label, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
+            label.setOnClickListener { showModelDetails(file) }
+            row.setOnClickListener { showModelDetails(file) }
+            label.contentDescription = "Detalhes do modelo ${file.name}"
             row.addView(MaterialButton(this).apply {
                 text = if (ModelSession.currentPath() == file.absolutePath) "Ativo" else "Carregar"
                 textSize = 11f; isAllCaps = false
@@ -271,10 +305,30 @@ class ModelsActivity : AppCompatActivity() {
                 setPadding(16,16,16,16)
                 setOnClickListener { delete(file) }
             }, android.widget.LinearLayout.LayoutParams(dp(52), dp(52)))
-            modelList.addView(row)
-            val line = View(this).apply { setBackgroundColor(ThemePreferences.borderColor(this@ModelsActivity)) }
-            modelList.addView(line, android.widget.LinearLayout.LayoutParams(-1, dp(1)))
+            val card = com.google.android.material.card.MaterialCardView(this).apply {
+                radius = dp(18).toFloat()
+                setCardBackgroundColor(ThemePreferences.panelColor(this@ModelsActivity))
+                strokeColor = ThemePreferences.borderColor(this@ModelsActivity)
+                strokeWidth = dp(1)
+                cardElevation = 0f
+                addView(row)
+            }
+            modelList.addView(card, android.widget.LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(10)
+            })
         }
+    }
+    private fun showModelDetails(file: File) {
+        val location = if (file.parentFile?.canonicalPath == modelsDir().canonicalPath)
+            "Biblioteca privada do Nexora" else "Biblioteca de downloads do aplicativo"
+        MaterialAlertDialogBuilder(this).setTitle(file.name)
+            .setMessage("Arquivo GGUF: ${StorageSummary.size(file.length())}\n" +
+                "Origem: $location\n" +
+                "Última modificação: ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(file.lastModified()))}\n" +
+                "Quantização indicada no nome: ${Regex("(Q[0-9]+(?:_[A-Z0-9]+)*)", RegexOption.IGNORE_CASE).find(file.name)?.value ?: "não identificada"}\n" +
+                "Nome original preservado. A quantização acima é inferida do nome, não dos metadados internos.")
+            .setPositiveButton("Carregar") { _, _ -> load(file) }
+            .setNegativeButton("Fechar", null).show()
     }
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
     private fun refresh() {
@@ -290,13 +344,15 @@ class ModelsActivity : AppCompatActivity() {
         val used = models().sumOf { it.length() }
         val space = StorageSummary.read(filesDir)
         storageInfo.text = "${StorageSummary.size(space.free)} livres de ${StorageSummary.size(space.total)}"
-        libraryUsage.text = "Modelos: ${StorageSummary.size(used)} de ${StorageSummary.size(space.total)} de capacidade  •  ${models().size} instalados"
+        val count = models().size
+        libraryUsage.text = "Modelos ocupam ${StorageSummary.size(used)} • $count ${if (count == 1) "instalado" else "instalados"}"
         storageUsedBar.progress = if (space.total > 0L) ((space.total - space.free).coerceAtLeast(0L) * 100.0 / space.total).toInt().coerceIn(0,100) else 0
         renderInstalled()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString(STATE_MESSAGE, message.text.toString())
+        outState.putString("awaiting_model", awaitingModel)
         super.onSaveInstanceState(outState)
     }
 

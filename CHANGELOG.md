@@ -1,5 +1,15 @@
 # Histórico Nexora
 
+## 0.1.0-alpha.11 • 17/10/2026
+- Carregamento do último modelo e cargas manuais transferidos para um escopo do processo, evitando cancelamentos por recriação da tela.
+- Modal de carregamento centralizado e bloqueante, com Cancelar cooperativo, tempo decorrido e informação honesta sobre progresso nativo indisponível.
+- Logotipo visível na tela inicial, pesquisa por lupa, menu de conversas em bottom sheet, confirmação de exclusão padronizada.
+- Diagnóstico rápido de CPU/RAM/pressão térmica, detalhes dos modelos, botões em cores do tema, carregamento com retorno automático à tela inicial.
+- Validação de modelo antes de criar conversas e nomenclatura de fragmentos/s corrigida para não se passar por tok/s.
+- Razão do cancelamento de inferência registrada para facilitar investigação do PDF interrompido.
+- Sem alteração na revisão do llama.cpp ou no formato do banco de dados.
+
+
 ## 0.1.0-alpha.10 • 17/10/2026
 - Corrige os 2 testes do catálogo no workflow Build 4: quatro modelos, inclusive Qwen3 4B, e revisão fixada no repositório oficial para o Qwen3 4B.
 - Novo ícone de bug ao lado das Configurações na tela inicial e página exclusiva Diagnóstico.
@@ -9,7 +19,7 @@
 - Amostragem de 3 segundos SOMENTE com a página aberta e log de métricas no máximo a cada 15 segundos. Zero serviço persistente/sem wakelock.
 - Compilação Gradle/Android e testes físicos pendentes.
 
-# Nexora • Histórico
+## Histórico anterior
 
 ## 0.1.0-alpha.10 (versionCode 10)
 - Corrigido AAPT2: `android:horizontalScrollBarEnabled` inválido substituído por `android:scrollbars="none"` no chat.

@@ -2,8 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
  android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent" android:background="?attr/uiSurface" android:paddingStart="20dp" android:paddingEnd="20dp">
  <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingTop="16dp" android:paddingBottom="19dp">
-  <ImageView android:layout_width="46dp" android:layout_height="46dp" android:src="@drawable/ic_nexora_mark" android:padding="4dp" android:contentDescription="Logotipo Nexora"/>
+  <ImageView android:layout_width="46dp" android:layout_height="46dp" android:src="@drawable/ic_nexora_mark" android:background="@color/nexora_icon_bg" android:padding="4dp" android:contentDescription="Logotipo Nexora"/>
   <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Nexora" android:textSize="29sp" android:textStyle="bold" android:textColor="?attr/uiLabel" android:layout_marginStart="8dp"/>
+  <ImageButton android:id="@+id/openResources" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_cpu" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Recursos: CPU, RAM e temperatura"/>
   <ImageButton android:id="@+id/openDiagnostics" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_bug" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Diagnóstico e bugs"/>
   <ImageButton android:id="@+id/openSettings" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_settings" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Configurações"/>
  </LinearLayout>
@@ -14,14 +15,17 @@
    <TextView android:id="@+id/modelLoadingInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="9dp" android:text="Iniciando inferência offline..." android:textColor="?attr/uiMuted" android:textSize="12sp"/>
   </LinearLayout>
  </com.google.android.material.card.MaterialCardView>
- <com.google.android.material.card.MaterialCardView android:id="@+id/newConversation" android:layout_width="match_parent" android:layout_height="wrap_content" android:clickable="true" android:focusable="true" app:cardBackgroundColor="?attr/uiPanel" app:cardCornerRadius="22dp" app:cardElevation="0dp">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+ <com.google.android.material.card.MaterialCardView android:id="@+id/newConversation" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:clickable="true" android:focusable="true" app:cardBackgroundColor="?attr/uiPanel" app:cardCornerRadius="22dp" app:cardElevation="0dp">
   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="19dp">
    <ImageView android:layout_width="27dp" android:layout_height="27dp" android:src="@drawable/ic_plus_circle" android:tint="?attr/uiLabel" android:contentDescription="Nova conversa"/>
    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:text="Nova conversa" android:textSize="18sp" android:textStyle="bold" android:textColor="?attr/uiLabel"/>
    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_chevron" android:tint="?attr/uiMuted" android:contentDescription="Abrir"/>
   </LinearLayout>
  </com.google.android.material.card.MaterialCardView>
- <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="19dp" android:gravity="center_vertical" android:orientation="horizontal">
+ <ImageButton android:id="@+id/toggleSearch" android:layout_width="50dp" android:layout_height="50dp" android:layout_marginStart="8dp" android:src="@drawable/ic_search" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Pesquisar conversas"/>
+ </LinearLayout>
+ <LinearLayout android:id="@+id/searchRow" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:gravity="center_vertical" android:orientation="horizontal">
   <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_search" android:tint="?attr/uiMuted" android:contentDescription="Pesquisar"/>
   <EditText android:id="@+id/searchConversations" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:layout_marginStart="14dp" android:background="@android:color/transparent" android:hint="Pesquisar conversas..." android:inputType="text" android:singleLine="true" android:textSize="15sp" android:textColor="?attr/uiLabel" android:textColorHint="?attr/uiMuted"/>
  </LinearLayout>

@@ -1,6 +1,6 @@
 # Nexora • Regras de desenvolvimento
 - App Android nativo Kotlin, GGUF offline em CPU via llama.cpp. Internet somente para download explícito de modelos.
-- Versão atual: `0.1.0-alpha.10` (`versionCode 10`). Próxima: `0.1.0-alpha.11` (`versionCode 11`).
+- Versão atual: `0.1.0-alpha.11` (`versionCode 11`). Próxima: `0.1.0-alpha.12` (`versionCode 12`).
 - Em cada alteração, incrementar sequencialmente `versionName` e `versionCode`; sincronizar README, CHANGELOG, docs/VERSIONING, docs/RELEASE_NOTES, workflow e identidade.
 - Identidade definitiva desde alpha.6: `br.com.adriedson.nexora`. Não restaurar o package antigo.
 - As quatro credenciais de assinatura permanecem opcionais via GitHub Secrets; nunca distribuir keystore nem senhas no repositório.

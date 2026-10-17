@@ -1,6 +1,14 @@
-# Nexora • v0.1.0-alpha.10 (versionCode 10)
+# Nexora • v0.1.0-alpha.11 (versionCode 11)
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+## Alpha.11: interface, gerenciamento e carregamento
+
+- Carregamento automático/manual protegido por diálogo centralizado, cancelamento cooperativo e execução independente do ciclo de vida da tela. O motor desta versão não fornece à UI porcentagem nativa; são mostrados tempo decorrido e histórico quando disponível.
+- Botão de CPU/RAM/temperatura na tela inicial; símbolo Nexora com fundo para não desaparecer em superfície clara; lupa para abrir pesquisa sob demanda.
+- Conversas com menu inferior padronizado e confirmação de exclusão temática; nenhuma nova conversa pode ser criada sem modelo pronto, mas histórico antigo permanece acessível.
+- Lista de modelos com cartões e detalhes de arquivo; importação SAF copia GGUF para armazenamento privado (comportamento já existente). Após carga manual, retorno à tela inicial.
+- Medidor de geração corrige a rotulagem: fragmentos/s não são necessariamente tokens/s; log diferencia cancelamento manual de interrupção por saída da tela.
 
 ## Alpha.10: Diagnóstico e correção do Build 4
 
@@ -26,17 +34,17 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 ## Como usar
 
-1. Abra Nexora: a página principal lista suas conversas e permite criar outras.
+1. Abra Nexora: a página principal lista conversas; para criar outra, carregue um modelo primeiro.
 2. Configurações → **Modelos de IA** → Baixar ou Importar GGUF → Carregar. O modelo é único em memória.
-3. Volte à tela inicial e toque Nova conversa ou em uma já existente. O modelo escolhido aparece no cabeçalho do chat, que permite abrir o gerenciador se necessário.
+3. Após o carregamento, a tela inicial é aberta automaticamente. Toque Nova conversa ou em uma já existente. O modelo escolhido aparece no cabeçalho do chat, que permite abrir o gerenciador se necessário.
 4. Toque no clipe 📎 para selecionar um PDF com texto (até 12 MiB). Aguarde a extração; um chip com nome/páginas aparecerá. Pergunte sobre o PDF. Apenas o texto relevante e limitado é oferecido ao modelo; ele pode errar.
-5. Use a busca por títulos e conteúdo, ou o menu de cada chat para fixar, renomear e excluir, com confirmação para exclusão.
+5. Abra a busca pela lupa e pesquise títulos ou conteúdo, ou o menu de cada chat para fixar, renomear e excluir, com confirmação para exclusão.
 
 ## Build e requisitos
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.10-apk-debug` e `Nexora-v0.1.0-alpha.10-apk-release-assinado` (se os quatro Secrets configurados).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.11-apk-debug` e `Nexora-v0.1.0-alpha.11-apk-release-assinado` (se os quatro Secrets configurados).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

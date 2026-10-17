@@ -38,6 +38,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loadingTitle: TextView
     private lateinit var loadingInfo: TextView
     private lateinit var loadingProgress: ProgressBar
+    private lateinit var loadingDialog: ModelLoadingDialog
+    private lateinit var searchRow: View
     override fun onCreate(savedInstanceState: Bundle?) {
         theme=ThemePreferences.applyBeforeCreate(this)
         super.onCreate(savedInstanceState)
@@ -46,15 +48,36 @@ class MainActivity : AppCompatActivity() {
         loadingTitle=findViewById(R.id.modelLoadingTitle)
         loadingInfo=findViewById(R.id.modelLoadingInfo)
         loadingProgress=findViewById(R.id.modelLoadingProgress)
+        loadingDialog=ModelLoadingDialog(this)
+        searchRow=findViewById(R.id.searchRow)
         store=ChatStore(this)
         store.migrateLegacy()
         history=findViewById(R.id.historyList)
         empty=findViewById(R.id.historyEmpty)
         search=findViewById(R.id.searchConversations)
         history.layoutManager=LinearLayoutManager(this)
+        findViewById<View>(R.id.openResources).setOnClickListener { ResourcePanel.show(this) }
         findViewById<View>(R.id.openDiagnostics).setOnClickListener { startActivity(Intent(this,DiagnosticsActivity::class.java)) }
         findViewById<View>(R.id.openSettings).setOnClickListener { startActivity(Intent(this,SettingsActivity::class.java)) }
-        findViewById<View>(R.id.newConversation).setOnClickListener { open(store.create(ModelSession.currentName())) }
+        findViewById<View>(R.id.newConversation).setOnClickListener {
+            when {
+                ModelSession.isLoading() -> loadingDialog.render(ModelSession.loadState.value)
+                !ModelSession.isReady(this) -> MaterialAlertDialogBuilder(this)
+                    .setTitle("Selecione um modelo")
+                    .setMessage("Carregue ou importe um modelo GGUF em Configurações antes de criar uma conversa.")
+                    .setNegativeButton("Cancelar", null)
+                    .setPositiveButton("Modelos") { _, _ -> startActivity(Intent(this, ModelsActivity::class.java)) }.show()
+                else -> open(store.create(ModelSession.currentName()))
+            }
+        }
+        findViewById<View>(R.id.toggleSearch).setOnClickListener {
+            searchRow.visibility=if (searchRow.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            if (searchRow.visibility == View.VISIBLE) {
+                search.requestFocus()
+                (getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager)
+                    .showSoftInput(search, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            } else { search.setText(""); search.clearFocus() }
+        }
         search.addTextChangedListener(object: TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start:Int,count:Int,after:Int) = Unit
             override fun onTextChanged(s: CharSequence?,start:Int,before:Int,count:Int) { refresh() }
@@ -67,37 +90,25 @@ class MainActivity : AppCompatActivity() {
                 launch { while (isActive) { renderLoading(); delay(700) } }
             }
         }
-        lifecycleScope.launch {
-            runCatching { ModelSession.restoreLastIfEnabled(applicationContext) }
-                .onFailure { renderLoading() }
-        }
+        ModelSession.startAutomaticRestore(applicationContext)
     }
 
     private fun renderLoading() {
-        if (!::loadingCard.isInitialized) return
-        when (val state = ModelSession.loadState.value) {
-            is ModelLoadState.Loading -> {
-                loadingCard.visibility=View.VISIBLE
-                loadingTitle.text="Aguarde, carregando ${state.name}"
-                val elapsed=SystemClock.elapsedRealtime()-state.startedMs
-                val estimate=ModelLoadProgress.estimate(elapsed, state.referenceMs)
-                loadingProgress.isIndeterminate=estimate.percentage == null
-                if (estimate.percentage != null) loadingProgress.progress=estimate.percentage
-                loadingInfo.text=when {
-                    estimate.percentage != null -> "${estimate.percentage}% estimado • decorrido ${ModelLoadProgress.clock(elapsed)} • restam ~${ModelLoadProgress.clock(estimate.remainingMs ?: 0)}"
-                    estimate.exceeded -> "Decorrido ${ModelLoadProgress.clock(elapsed)} • ultrapassou o tempo anterior; aguardando conclusão"
-                    else -> "Decorrido ${ModelLoadProgress.clock(elapsed)} • primeira carga, tempo restante desconhecido"
-                }
-            }
-            is ModelLoadState.Problem -> {
-                loadingCard.visibility=View.VISIBLE
-                loadingTitle.text="Modelo: ${state.name}"
-                loadingInfo.text=state.detail
-                loadingProgress.isIndeterminate=false
-                loadingProgress.progress=0
-            }
-            else -> { loadingCard.visibility=View.GONE }
-        }
+        if (!::loadingDialog.isInitialized) return
+        val state = ModelSession.loadState.value
+        loadingDialog.render(state)
+        // Problemas continuam visíveis sem bloquear a interface.
+        if (state is ModelLoadState.Problem) {
+            loadingCard.visibility = View.VISIBLE
+            loadingTitle.text = "Modelo: ${state.name}"
+            loadingInfo.text = state.detail
+            loadingProgress.isIndeterminate = false
+            loadingProgress.progress = 0
+        } else loadingCard.visibility = View.GONE
+    }
+    override fun onDestroy() {
+        if (::loadingDialog.isInitialized) loadingDialog.dismiss()
+        super.onDestroy()
     }
     override fun onResume() {
         super.onResume()
@@ -111,30 +122,23 @@ class MainActivity : AppCompatActivity() {
         empty.text=if(search.text.isBlank()) "Sem conversas ainda. Toque em Nova conversa para começar." else "Nenhuma conversa encontrada."
         history.adapter=ConversationAdapter(items,::open,::showActions)
     }
-    private fun showActions(view:View, item:Conversation) {
-        val menu=PopupMenu(this,view)
-        menu.menu.add("Renomear")
-        menu.menu.add(if(item.pinned) "Desafixar" else "Fixar")
-        menu.menu.add("Excluir")
-        menu.setOnMenuItemClickListener { selected ->
-            when(selected.title.toString()) {
-                "Renomear" -> {
-                    val input=EditText(this).apply { setText(item.title);setSelection(text.length);setSingleLine(true) }
-                    MaterialAlertDialogBuilder(this).setTitle("Renomear conversa")
-                        .setView(input).setPositiveButton("Salvar") { _,_ ->
-                            runCatching { store.rename(item.id,input.text.toString()) };refresh()
-                        }.setNegativeButton("Cancelar",null).show()
+    private fun showActions(view: View, item: Conversation) {
+        NexoraDialogs.conversationMenu(this, item.pinned,
+            onRename = {
+                NexoraDialogs.rename(this, item.title) { newTitle ->
+                    runCatching { store.rename(item.id, newTitle) }; refresh()
                 }
-                "Fixar","Desafixar" -> {store.pin(item.id,!item.pinned);refresh()}
-                "Excluir" -> MaterialAlertDialogBuilder(this).setTitle("Excluir conversa?")
-                    .setMessage("Mensagens e textos PDF anexados nesta conversa serão removidos. Os modelos GGUF continuarão instalados.")
-                    .setPositiveButton("Excluir") { _,_ ->store.delete(item.id);refresh()}
-                    .setNegativeButton("Cancelar",null).show()
+            },
+            onPin = { store.pin(item.id, !item.pinned); refresh() },
+            onDelete = {
+                NexoraDialogs.confirmDelete(this, "Excluir conversa?",
+                    "As mensagens e os textos PDF anexados serão removidos. Os modelos permanecerão instalados.") {
+                    store.delete(item.id); refresh()
+                }
             }
-            true
-        }
-        menu.show()
+        )
     }
+
 }
 
 class ConversationAdapter(

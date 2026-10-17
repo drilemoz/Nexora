@@ -64,13 +64,19 @@ class ChatActivity : AppCompatActivity() {
     private var busy = false
     private var thinking = false
     private var generation: Job? = null
+    private var generationCancelReason = "unknown"
     private val prefs by lazy { getSharedPreferences("nexora_chat", Context.MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         appliedTheme = ThemePreferences.applyBeforeCreate(this)
         super.onCreate(savedInstanceState)
         store = ChatStore(applicationContext)
-        chatId = intent.getStringExtra(EXTRA_CHAT_ID)?.takeIf { store.exists(it) } ?: store.create(ModelSession.currentName())
+        val existing = intent.getStringExtra(EXTRA_CHAT_ID)?.takeIf { store.exists(it) }
+        if (existing == null && !ModelSession.isReady(this)) {
+            finish() // não criar conversa fantasma sem modelo
+            return
+        }
+        chatId = existing ?: store.create(ModelSession.currentName())
         setContentView(R.layout.activity_chat)
         prompt = findViewById(R.id.promptInput)
         status = findViewById(R.id.stateLabel)
@@ -92,7 +98,16 @@ class ChatActivity : AppCompatActivity() {
         findViewById<View>(R.id.chatModelName).setOnClickListener {
             startActivity(Intent(this, ModelsActivity::class.java))
         }
-        findViewById<TextView>(R.id.chatModelName).text = ModelSession.currentName() ?: "Modelo não carregado"
+        findViewById<TextView>(R.id.chatModelName).apply {
+            text = ModelSession.currentName() ?: "Modelo não carregado"
+            contentDescription = "Modelo em execução: $text. Toque para gerenciar; pressione para ver o nome completo."
+            setOnLongClickListener {
+                MaterialAlertDialogBuilder(this@ChatActivity).setTitle("Modelo em execução")
+                    .setMessage(ModelSession.currentName() ?: "Nenhum modelo carregado")
+                    .setPositiveButton("Fechar", null).show()
+                true
+            }
+        }
         findViewById<View>(R.id.backChat).setOnClickListener { finish() }
         messages.addAll(store.load(chatId))
         adapter = ChatAdapter(messages)
@@ -100,11 +115,10 @@ class ChatActivity : AppCompatActivity() {
         list.adapter = adapter
         if (messages.isNotEmpty()) list.scrollToPosition(messages.lastIndex)
         findViewById<View>(R.id.clearChat).setOnClickListener {
-            if (!busy) MaterialAlertDialogBuilder(this).setTitle("Apagar conversa?")
-                .setMessage("As mensagens salvas nesta Nexora serão excluídas. Os modelos continuarão instalados.")
-                .setPositiveButton("Apagar") { _, _ ->
-                    messages.clear(); adapter.notifyDataSetChanged(); save()
-                }.setNegativeButton("Cancelar", null).show()
+            if (!busy) NexoraDialogs.confirmDelete(this, "Apagar mensagens?",
+                "As mensagens desta conversa serão excluídas. Os modelos continuarão instalados.") {
+                messages.clear(); adapter.notifyDataSetChanged(); save()
+            }
         }
         thinking = prefs.getBoolean("thinking_enabled", false)
         mode.setOnClickListener {
@@ -124,7 +138,7 @@ class ChatActivity : AppCompatActivity() {
             true
         }
         send.setOnClickListener { submit() }
-        stop.setOnClickListener { status.text = "Interrompendo geração..."; generation?.cancel() }
+        stop.setOnClickListener { generationCancelReason = "user"; status.text = "Interrompendo geração..."; generation?.cancel() }
         updateMode()
         renderPdfs()
         refresh()
@@ -230,6 +244,7 @@ class ChatActivity : AppCompatActivity() {
         val qwen = ModelSession.currentName()?.contains("qwen3", true) == true
         val instruction = if (qwen) "\n${if (thinking) "/think" else "/no_think"}" else ""
         val filter = ThinkingTextFilter()
+        generationCancelReason = "none"
         generation = lifecycleScope.launch {
             try {
                 val pdfs = if (firstPrompt || pdfDirty) store.pdfs(chatId) else emptyList()
@@ -255,7 +270,7 @@ class ChatActivity : AppCompatActivity() {
             } catch (_: CancellationException) {
                 response.text = filter.finish().ifBlank { "(Geração interrompida.)" }
                 status.text = "Geração interrompida."
-                DiagnosticEvents.record(this@ChatActivity, "inference.cancel")
+                DiagnosticEvents.record(this@ChatActivity, "inference.cancel", "reason=$generationCancelReason")
             } catch (e: Exception) {
                 response.text = filter.finish().ifBlank { "(Não foi possível gerar a resposta.)" }
                 status.text = "Erro de inferência: ${e.localizedMessage?.take(120)}"
@@ -290,7 +305,7 @@ class ChatActivity : AppCompatActivity() {
     private fun displayMeter() {
         val reading = meter.reading(SystemClock.elapsedRealtimeNanos())
         performanceSpeed.text = reading.fragmentsPerSecond?.let {
-            String.format(Locale("pt", "BR"), "%.1f frag./s ≈ tok/s", it)
+            String.format(Locale("pt", "BR"), "%.1f frag./s", it)
         } ?: "— frag./s"
         val rate = reading.fragmentsPerSecond
         performanceGauge.progress = (rate ?: 0.0).coerceIn(0.0, 30.0).toInt()
@@ -307,7 +322,7 @@ class ChatActivity : AppCompatActivity() {
         performanceNote.text = when {
             reading.fragments == 0 -> "A velocidade aparece após os primeiros fragmentos gerados."
             reading.fragments < 2 -> "Recebendo o primeiro fragmento..."
-            else -> "${reading.fragments} fragmentos emitidos • estimativa, não contador nativo de tokens"
+            else -> "${reading.fragments} fragmentos • não equivalem necessariamente a tokens"
         }
     }
 
@@ -325,6 +340,7 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!::performanceMemory.isInitialized) return
         sampleDevice()
         samplingJob?.cancel()
         samplingJob = lifecycleScope.launch {
@@ -339,7 +355,16 @@ class ChatActivity : AppCompatActivity() {
                 (ModelSession.isReady(this) && ModelSession.activeConversationId() != chatId))) {
             contextReady = false
             firstPrompt = true
-            findViewById<TextView>(R.id.chatModelName).text = ModelSession.currentName() ?: "Modelo não carregado"
+            findViewById<TextView>(R.id.chatModelName).apply {
+            text = ModelSession.currentName() ?: "Modelo não carregado"
+            contentDescription = "Modelo em execução: $text. Toque para gerenciar; pressione para ver o nome completo."
+            setOnLongClickListener {
+                MaterialAlertDialogBuilder(this@ChatActivity).setTitle("Modelo em execução")
+                    .setMessage(ModelSession.currentName() ?: "Nenhum modelo carregado")
+                    .setPositiveButton("Fechar", null).show()
+                true
+            }
+        }
             prepareChatContext()
         } else if (::store.isInitialized && !contextReady && !preparingContext && ModelSession.isReady(this) && !busy) prepareChatContext()
     }
@@ -352,6 +377,7 @@ class ChatActivity : AppCompatActivity() {
 
     companion object { const val EXTRA_CHAT_ID="chat_id" }
     override fun onStop() {
+        if (generation?.isActive == true) generationCancelReason = "app_background"
         generation?.cancel() // sem inferência silenciosa em segundo plano
         super.onStop()
     }

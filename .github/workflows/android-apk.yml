@@ -80,7 +80,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: Nexora-v0.1.0-alpha.10-apk-debug
+          name: Nexora-v0.1.0-alpha.11-apk-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -88,7 +88,7 @@ jobs:
         if: success() && steps.signing.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Nexora-v0.1.0-alpha.10-apk-release-assinado
+          name: Nexora-v0.1.0-alpha.11-apk-release-assinado
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14

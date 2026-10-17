@@ -53,7 +53,7 @@ object DiagnosticEvents {
         read(context).forEach { data.put(it) }
         return JSONObject().put("format", "nexora-diagnostics-v1")
             .put("generatedAt", System.currentTimeMillis())
-            .put("app", "Nexora 0.1.0-alpha.10")
+            .put("app", "Nexora 0.1.0-alpha.11")
             .put("androidSdk", Build.VERSION.SDK_INT)
             .put("device", "${Build.MANUFACTURER.take(40)} ${Build.MODEL.take(60)}")
             .put("processors", Runtime.getRuntime().availableProcessors())
@@ -64,7 +64,7 @@ object DiagnosticEvents {
 class NexoraApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        DiagnosticEvents.record(this, "app.start", "versionCode=10")
+        DiagnosticEvents.record(this, "app.start", "versionCode=11")
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
             // Evita exception.message e stack trace completo: podem incluir conteúdo privado.

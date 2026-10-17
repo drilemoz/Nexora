@@ -4,6 +4,9 @@ import android.content.Context
 import android.os.SystemClock
 import com.arm.aichat.AiChat
 import com.arm.aichat.InferenceEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +33,9 @@ object ModelSession {
     @Volatile private var activeChat: String? = null
     private val sessionMutex = Mutex()
     private val restoring = AtomicBoolean(false)
+    private val scheduled = AtomicBoolean(false)
+    private val cancelLoad = AtomicBoolean(false)
+    private val worker = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutableLoadState = MutableStateFlow<ModelLoadState>(ModelLoadState.Idle)
     val loadState: StateFlow<ModelLoadState> = mutableLoadState.asStateFlow()
 
@@ -39,6 +45,45 @@ object ModelSession {
     fun engine(context: Context): InferenceEngine = AiChat.getInferenceEngine(context.applicationContext)
     fun isReady(context: Context): Boolean = currentName() != null && engine(context).state.value is InferenceEngine.State.ModelReady
     fun isLoading(): Boolean = loadState.value is ModelLoadState.Loading
+    fun isCancelRequested(): Boolean = cancelLoad.get()
+    fun requestCancelLoad(): Boolean {
+        if (!isLoading()) return false
+        cancelLoad.set(true)
+        return true
+    }
+
+    fun startAutomaticRestore(context: Context) {
+        val app = context.applicationContext
+        if (!ModelStartup.enabled(app) || !ModelStartup.hasRemembered(app)) return
+        if (!scheduled.compareAndSet(false, true)) return
+        worker.launch {
+            try { restoreLastIfEnabled(app) }
+            catch (e: Exception) { DiagnosticEvents.record(app, "model.autoload.error", "type=${e.javaClass.simpleName}", "ERROR") }
+            finally { scheduled.set(false) }
+        }
+    }
+
+    fun startManualLoad(context: Context, file: File): Boolean {
+        if (!scheduled.compareAndSet(false, true)) return false
+        if (isLoading()) { scheduled.set(false); return false }
+        val app = context.applicationContext
+        cancelLoad.set(false)
+        mutableLoadState.value = ModelLoadState.Loading(file.name, SystemClock.elapsedRealtime(),
+            ModelStartup.estimatedDuration(app, file), false)
+        worker.launch {
+            try { load(app, file) }
+            catch (_: CancellationException) { /* cancelamento cooperativo registrado abaixo */ }
+            catch (error: Exception) {
+                if (mutableLoadState.value is ModelLoadState.Loading) {
+                    mutableLoadState.value = ModelLoadState.Problem(file.name,
+                        "Falha ao carregar: ${error.localizedMessage?.take(120) ?: error.javaClass.simpleName}")
+                    DiagnosticEvents.record(app, "model.load.error", "type=${error.javaClass.simpleName}", "ERROR")
+                }
+            }
+            finally { scheduled.set(false) }
+        }
+        return true
+    }
 
     suspend fun restoreLastIfEnabled(context: Context) {
         val app = context.applicationContext
@@ -59,6 +104,7 @@ object ModelSession {
                     "O carregamento anterior foi interrompido. Por segurança, selecione o modelo manualmente em Configurações.")
                 return
             }
+            cancelLoad.set(false)
             ModelStartup.markAutoAttempt(app, file)
             try { load(app, file, automatic = true) }
             finally { ModelStartup.clearAutoAttempt(app) }
@@ -73,6 +119,7 @@ object ModelSession {
                 return@withLock
             }
             val startMs = SystemClock.elapsedRealtime()
+            if (!automatic && !scheduled.get()) cancelLoad.set(false)
             DiagnosticEvents.record(context, "model.load.start", "name=${model.name.take(95)} automatic=$automatic")
             mutableLoadState.value = ModelLoadState.Loading(model.name, startMs,
                 ModelStartup.estimatedDuration(context, model), automatic)
@@ -88,14 +135,31 @@ object ModelSession {
                 }
                 path = null
                 activeChat = null
+                if (cancelLoad.get()) throw CancellationException("Carregamento cancelado")
                 e.loadModel(model.absolutePath)
+                if (cancelLoad.get()) {
+                    e.cleanUp()
+                    throw CancellationException("Carregamento cancelado após liberação do motor")
+                }
                 path = model.absolutePath
                 activeChat = null
                 val elapsed = SystemClock.elapsedRealtime() - startMs
                 ModelStartup.rememberSuccessful(context, model, elapsed)
                 DiagnosticEvents.record(context, "model.load.ready", "name=${model.name.take(95)} elapsedMs=$elapsed")
                 mutableLoadState.value = ModelLoadState.Ready(model.name)
+            } catch (e: CancellationException) {
+                path = null
+                activeChat = null
+                mutableLoadState.value = ModelLoadState.Idle
+                DiagnosticEvents.record(context, "model.load.cancel", "name=${model.name.take(95)}")
+                throw e
             } catch (e: Exception) {
+                // Uma falha nativa parcial pode deixar buffers alocados. Liberar somente estados seguros.
+                try {
+                    val failedEngine = engine(context)
+                    if (failedEngine.state.value is InferenceEngine.State.Error ||
+                        failedEngine.state.value is InferenceEngine.State.ModelReady) failedEngine.cleanUp()
+                } catch (_: Exception) { /* preservar falha original no diagnóstico */ }
                 DiagnosticEvents.record(context, "model.load.error", "name=${model.name.take(95)} type=${e.javaClass.simpleName}", "ERROR")
                 path = null
                 activeChat = null
