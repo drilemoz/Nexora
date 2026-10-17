@@ -1,3 +1,13 @@
+# Nexora 0.1.0-alpha.16
+
+- Nova biblioteca visual GGUF com menus, busca e ordenação, sem renomear os arquivos físicos.
+- Configurações reais por modelo: perfis Econômico, Equilibrado e Personalizado; alterar parâmetros exige recarregar o GGUF, exceto limite de tokens das próximas solicitações. Contextos maiores podem aumentar RAM e causar falha de carregamento.
+- Chat alinhado (usuário à esquerda, Nexora à direita), Markdown básico, copiar e regenerar última resposta com reinicialização de contexto (pode demorar).
+- RAM com porcentagens dentro da barra, detalhes de desempenho expansíveis e janela de recursos com ícones.
+- Diagnóstico compacto, filtros sessão/versão e exportação JSON direta e privada na pasta Downloads/Nexora. Não há envio automático.
+- Aviso de PDFs parcialmente extraídos e trechos efetivamente utilizados.
+- Compilação Android completa/JNI e testes físicos de temas, download, armazenamento e inferência não executados neste ambiente.
+
 # Nexora 0.1.0-alpha.15
 
 - Painel local de desempenho redesenhado, compacto e expansível.

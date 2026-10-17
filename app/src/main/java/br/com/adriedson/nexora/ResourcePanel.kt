@@ -27,13 +27,22 @@ object ResourcePanel {
                 textSize = 14f
                 setTextColor(ThemePreferences.labelColor(activity))
                 setPadding(0, dp(activity, 8), 0, dp(activity, 8))
-                layout.addView(this, ViewGroup.LayoutParams(-1, -2))
+                val line=this
+                val row=LinearLayout(activity).apply { gravity=Gravity.CENTER_VERTICAL;orientation=LinearLayout.HORIZONTAL }
+                val icon=android.widget.ImageView(activity).apply {
+                    setImageResource(listOf(R.drawable.ic_cpu,R.drawable.ic_memory,R.drawable.ic_thermometer,R.drawable.ic_bug)[it])
+                    setColorFilter(ThemePreferences.accentColor(activity))
+                    setPadding(dp(activity,4),dp(activity,4),dp(activity,4),dp(activity,4))
+                }
+                row.addView(icon,LinearLayout.LayoutParams(dp(activity,34),dp(activity,34)))
+                row.addView(line,LinearLayout.LayoutParams(0,-2,1f))
+                layout.addView(row,ViewGroup.LayoutParams(-1,-2))
             }
         }
-        lines[0].text = "◈ CPU: calculando..."
-        lines[1].text = "◈ RAM: calculando..."
-        lines[2].text = "◈ Bateria: calculando..."
-        lines[3].text = "◈ Estado térmico: calculando..."
+        lines[0].text = "CPU Nexora: calculando..."
+        lines[1].text = "RAM: calculando..."
+        lines[2].text = "Bateria: calculando..."
+        lines[3].text = "Estado térmico: calculando..."
         val dlg = MaterialAlertDialogBuilder(activity).setTitle("Recursos do aparelho")
             .setView(layout).setPositiveButton("Fechar", null).create()
         val cpu = CpuMeter()
@@ -44,13 +53,13 @@ object ResourcePanel {
             while (isActive && dlg.isShowing) {
                 val snap = withContext(Dispatchers.Default) { runCatching { DeviceSampler.capture(activity.applicationContext) }.getOrNull() }
                 val cpuReading = cpu.sample()
-                lines[0].text = cpuReading?.let { "◈ CPU Nexora: " +
+                lines[0].text = cpuReading?.let { "CPU Nexora: " +
                     String.format(Locale("pt", "BR"), "%.1f%% (total dos %d núcleos)", it.allCorePercent, it.cores) }
-                    ?: "◈ CPU Nexora: amostrando..."
+                    ?: "CPU Nexora: amostrando..."
                 if (snap != null) {
-                    lines[1].text = "◈ RAM: ${snap.availableMiB} / ${snap.totalMiB} MiB disponíveis\n   Nexora: ${snap.processPssMiB} MiB PSS"
-                    lines[2].text = "◈ Bateria: ${snap.batteryC?.let { String.format(Locale("pt", "BR"), "%.1f °C", it) } ?: "indisponível"}"
-                    lines[3].text = "◈ ${ThermalDisplay.status(snap.thermalText, snap.thermalStatusCode)}" +
+                    lines[1].text = "RAM: ${snap.availableMiB} / ${snap.totalMiB} MiB disponíveis\n   Nexora: ${snap.processPssMiB} MiB PSS"
+                    lines[2].text = "Bateria: ${snap.batteryC?.let { String.format(Locale("pt", "BR"), "%.1f °C", it) } ?: "indisponível"}"
+                    lines[3].text = "${ThermalDisplay.status(snap.thermalText, snap.thermalStatusCode)}" +
                         "\n   Margem térmica: ${ThermalDisplay.headroom(snap.thermalHeadroom)}" +
                         "\n   Estado do Android, não temperatura da CPU"
                 }

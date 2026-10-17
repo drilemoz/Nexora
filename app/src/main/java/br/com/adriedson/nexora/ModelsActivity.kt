@@ -136,6 +136,7 @@ class ModelsActivity : AppCompatActivity() {
             .sortedBy { it.name.lowercase() }
     }
 
+    /** Biblioteca personalizada com pesquisa, ordenação e ações individuais. */
     private fun showModels() {
         val all = models()
         if (all.isEmpty()) {
@@ -145,12 +146,96 @@ class ModelsActivity : AppCompatActivity() {
                 .setNegativeButton("Fechar", null).show()
             return
         }
-        val labels = all.map { "${ModelLabels.display(this, it)}\n${it.name} • ${StorageSummary.size(it.length())}" } +
-            if (ModelSession.isReady(this)) listOf("Descarregar modelo ativo • liberar RAM") else emptyList()
-        MaterialAlertDialogBuilder(this).setTitle("Biblioteca de modelos")
-            .setItems(labels.toTypedArray()) { _, index ->
-                if (index == all.size) unload() else showModelDetails(all[index])
-            }.setNegativeButton("Fechar", null).show()
+        val container = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL; setPadding(dp(18),0,dp(18),dp(8))
+        }
+        val search=android.widget.EditText(this).apply {
+            hint="Buscar modelos instalados";setSingleLine(true);textSize=14f
+            inputType=android.text.InputType.TYPE_CLASS_TEXT
+        }
+        container.addView(search,android.widget.LinearLayout.LayoutParams(-1,dp(52)))
+        val order=android.widget.Spinner(this)
+        order.adapter=android.widget.ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,
+            listOf("Nome (A-Z)","Menor arquivo","Maior arquivo","Último uso"))
+        container.addView(order,android.widget.LinearLayout.LayoutParams(-1,dp(48)))
+        val scroller=android.widget.ScrollView(this)
+        val entries=android.widget.LinearLayout(this).apply {orientation=android.widget.LinearLayout.VERTICAL}
+        scroller.addView(entries)
+        container.addView(scroller,android.widget.LinearLayout.LayoutParams(-1,dp(330)))
+        val dialog=MaterialAlertDialogBuilder(this).setTitle("Biblioteca de modelos")
+            .setView(container).setNegativeButton("Fechar",null)
+            .setNeutralButton(if(ModelSession.isReady(this))"Descarregar ativo" else "Explorar") { _, _ ->
+                if(ModelSession.isReady(this)) unload() else startActivity(Intent(this,ModelCatalogActivity::class.java))
+            }.create()
+        fun renderList() {
+            entries.removeAllViews()
+            val query=search.text.toString().trim()
+            val ordered=all.filter { ModelLabels.display(this,it).contains(query,true) || it.name.contains(query,true) }
+                .let { items -> when(order.selectedItemPosition) {
+                    1->items.sortedBy{it.length()};2->items.sortedByDescending{it.length()}
+                    3->items.sortedByDescending{it.lastModified()};else->items.sortedBy{ModelLabels.display(this,it).lowercase()}
+                } }
+            if(ordered.isEmpty()) entries.addView(TextView(this).apply {text="Nenhum modelo encontrado";setPadding(0,dp(14),0,dp(14))})
+            ordered.forEach { file ->
+                val active=ModelSession.currentPath()==file.absolutePath
+                val row=android.widget.LinearLayout(this).apply {
+                    orientation=android.widget.LinearLayout.HORIZONTAL;gravity=android.view.Gravity.CENTER_VERTICAL
+                    setPadding(dp(11),dp(10),dp(6),dp(10))
+                }
+                val icon=android.widget.ImageView(this).apply {
+                    setImageResource(R.drawable.ic_brain)
+                    setColorFilter(ThemePreferences.accentColor(this@ModelsActivity))
+                    setPadding(dp(7),dp(7),dp(7),dp(7))
+                }
+                row.addView(icon,android.widget.LinearLayout.LayoutParams(dp(42),dp(42)))
+                val label=TextView(this).apply {
+                    text="${ModelLabels.display(this@ModelsActivity,file)}${if(active) "  •  ATIVO" else ""}\n${StorageSummary.size(file.length())} • ${quantization(file)}\n${file.name}"
+                    setTextColor(ThemePreferences.labelColor(this@ModelsActivity));textSize=12f
+                    maxLines=4;setPadding(dp(4),0,0,0)
+                }
+                row.addView(label,android.widget.LinearLayout.LayoutParams(0,-2,1f))
+                val action=android.widget.ImageButton(this).apply {
+                    setImageResource(R.drawable.ic_more);setColorFilter(ThemePreferences.accentColor(this@ModelsActivity))
+                    background=null;contentDescription="Ações de ${file.name}"
+                    setOnClickListener { dialog.dismiss();showModelActions(file) }
+                }
+                row.addView(action,android.widget.LinearLayout.LayoutParams(dp(48),dp(48)))
+                row.setOnClickListener { dialog.dismiss();showModelActions(file) }
+                entries.addView(com.google.android.material.card.MaterialCardView(this).apply {
+                    radius=dp(14).toFloat();cardElevation=0f
+                    setCardBackgroundColor(ThemePreferences.panelColor(this@ModelsActivity))
+                    strokeColor=ThemePreferences.borderColor(this@ModelsActivity);strokeWidth=dp(1)
+                    addView(row)
+                },android.widget.LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=dp(8) })
+            }
+        }
+        search.addTextChangedListener(object:android.text.TextWatcher {
+            override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int)=Unit
+            override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){renderList()}
+            override fun afterTextChanged(s:android.text.Editable?)=Unit
+        })
+        order.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,pos:Int,id:Long){renderList()}
+            override fun onNothingSelected(parent:android.widget.AdapterView<*>?)=Unit
+        }
+        renderList();dialog.show()
+    }
+
+    private fun quantization(file:File):String =
+        Regex("Q[0-9]+(?:_[A-Z0-9]+)*",RegexOption.IGNORE_CASE).find(file.name)?.value ?: "Quantização não identificada"
+
+    private fun showModelActions(file:File) {
+        val active=ModelSession.currentPath()==file.absolutePath
+        val labels=arrayOf(if(active)"Descarregar modelo" else "Carregar modelo",
+            "⚙ Ajustes de inferência","Detalhes técnicos","Renomear","Excluir arquivo")
+        MaterialAlertDialogBuilder(this).setTitle(ModelLabels.display(this,file))
+            .setItems(labels) { _,index -> when(index) {
+                0 -> if(active) unload() else load(file)
+                1 -> ModelSettingsDialog.show(this,file)
+                2 -> showModelDetails(file)
+                3 -> renameLabel(file)
+                4 -> delete(file)
+            }}.setNegativeButton("Fechar",null).show()
     }
 
     private fun delete(file: File) {
@@ -160,10 +245,12 @@ class ModelsActivity : AppCompatActivity() {
         }
         NexoraDialogs.confirmDelete(this, "Excluir ${file.name}?",
             "Esta cópia privada será apagada. O arquivo original selecionado na pasta Downloads não será afetado.") {
+            // Limpar preferências ANTES da remoção; chave inclui tamanho do GGUF.
             val removed = file.delete()
             if (removed) {
                 ModelStartup.forgetIfMatches(this, file)
                 ModelLabels.clear(this, file)
+                ModelInferencePreferences.clear(this,file)
             }
             toast(if (removed) "Modelo removido" else "Falha ao excluir modelo")
             refresh()
@@ -285,7 +372,7 @@ class ModelsActivity : AppCompatActivity() {
                 setPadding(10, 16, 4, 16)
             }
             val label = TextView(this).apply {
-                text = "${if (ModelSession.currentPath() == file.absolutePath) "●  " else "◈  "}${ModelLabels.display(this@ModelsActivity, file)}\n${file.name} • ${StorageSummary.size(file.length())}"
+                text = "${if (ModelSession.currentPath() == file.absolutePath) "●  " else "◇  "}${ModelLabels.display(this@ModelsActivity, file)}\n${quantization(file)} • ${StorageSummary.size(file.length())}\n${file.name}"
                 setTextColor(ThemePreferences.labelColor(this@ModelsActivity))
                 textSize = 13f
                 maxLines = 3
@@ -300,6 +387,13 @@ class ModelsActivity : AppCompatActivity() {
                 isEnabled = !busy && ModelSession.currentPath() != file.absolutePath
                 setOnClickListener { load(file) }
             })
+            row.addView(android.widget.ImageButton(this).apply {
+                setImageResource(R.drawable.ic_more)
+                background = null
+                setColorFilter(ThemePreferences.accentColor(this@ModelsActivity))
+                contentDescription = "Opções de ${file.name}"
+                setOnClickListener { showModelActions(file) }
+            }, android.widget.LinearLayout.LayoutParams(dp(44),dp(48)))
             row.addView(android.widget.ImageButton(this).apply {
                 setImageResource(R.drawable.ic_delete)
                 background = null
@@ -334,7 +428,7 @@ class ModelsActivity : AppCompatActivity() {
             .setPositiveButton(if (ModelSession.currentPath() == file.absolutePath) "Ativo" else "Carregar") { _, _ ->
                 if (ModelSession.currentPath() != file.absolutePath) load(file)
             }
-            .setNeutralButton("Renomear") { _, _ -> renameLabel(file) }
+            .setNeutralButton("Ajustes ⚙") { _, _ -> ModelSettingsDialog.show(this,file) }
             .setNegativeButton("Fechar", null).show()
     }
     private fun renameLabel(file: File) {

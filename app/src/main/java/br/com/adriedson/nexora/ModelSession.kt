@@ -138,6 +138,9 @@ object ModelSession {
                 path = null
                 activeChat = null
                 if (cancelLoad.get()) throw CancellationException("Carregamento cancelado")
+                val inference = ModelInferencePreferences.get(context, model)
+                e.configureModel(inference.contextSize,inference.threads,inference.temperature,
+                    inference.topP,inference.topK,inference.minP,inference.repeatPenalty)
                 e.loadModel(model.absolutePath)
                 if (cancelLoad.get()) {
                     e.cleanUp()
@@ -172,6 +175,23 @@ object ModelSession {
         }
     }
 
+    suspend fun resetConversation(context:Context,chatId:String):Boolean = withContext(Dispatchers.IO) {
+        sessionMutex.withLock {
+            val current=currentPath() ?: return@withLock false
+            val file=File(current)
+            if(!file.isFile || !isReady(context)) return@withLock false
+            val e=engine(context)
+            e.cleanUp()
+            path=null;activeChat=null
+            val settings=ModelInferencePreferences.get(context,file)
+            e.configureModel(settings.contextSize,settings.threads,settings.temperature,settings.topP,settings.topK,settings.minP,settings.repeatPenalty)
+            e.loadModel(current)
+            path=current;activeChat=chatId
+            DiagnosticEvents.record(context,"model.context.reset","reason=regenerate")
+            true
+        }
+    }
+
     suspend fun unload(context: Context) = withContext(Dispatchers.IO) {
         sessionMutex.withLock {
             val e = engine(context)
@@ -200,6 +220,9 @@ object ModelSession {
                 path = null
                 activeChat = null
                 try {
+                    val inference = ModelInferencePreferences.get(context, File(current))
+                    e.configureModel(inference.contextSize,inference.threads,inference.temperature,
+                        inference.topP,inference.topK,inference.minP,inference.repeatPenalty)
                     e.loadModel(current)
                     path = current
                     activeChat = chatId

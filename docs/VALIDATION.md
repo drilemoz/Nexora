@@ -1,3 +1,14 @@
+# Validação 0.1.0-alpha.16 (código-fonte)
+
+- Sintaxe Kotlin: validar 53 fontes; XML: validar 41 recursos; scripts Python via `py_compile` e shell via `bash -n`.
+- Configuração do llama.cpp: executar bootstrap com revisão fixa e confirmar aplicação fail-fast de ambos os patches (métricas JNI e preferências); compilar C++/Kotlin e testar seleção de perfil.
+- Testar perfis Econ/Eq/Personalizado, troca de modelo, reload, contexto, limite de tokens, thread, temperatura e top-k/p; validar a ausência de falha JNI.
+- Testar tema claro/escuro/AMOLED e fonte grande na biblioteca, modal, cabeçalho do chat, mensagens com Markdown, toolbar e painel de RAM.
+- Testar exportação MediaStore em Downloads/Nexora, nome sem sobrescrever exportações, URI legível, JSON válido, filtro por sessão e versão.
+- Testar anexos PDF parciais, cancelamento e regeneração da última resposta (recarrega contexto e refaz o prompt).
+- Validar CPU somente Nexora, pressão térmica Android vs bateria, pico PSS e percentuais RAM; não prometer CPU °C.
+- **Pendente:** build completo no GitHub Actions e testes no Redmi; análise estática não comprova execução do aplicativo.
+
 # Validação 0.1.0-alpha.15
 
 - Validar layout compacto e expansão nos temas claro, escuro e AMOLED em aparelho, com teclado e fontes ampliadas.

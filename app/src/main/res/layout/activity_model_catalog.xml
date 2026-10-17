@@ -6,6 +6,10 @@
  </LinearLayout>
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CATÁLOGO GGUF" android:letterSpacing="0.13" android:textStyle="bold" android:textSize="11sp" android:textColor="?attr/uiAccent"/>
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Modelos leves e locais. Internet somente para baixar." android:textSize="13sp" android:textColor="?attr/uiMuted" android:layout_marginTop="6dp" android:layout_marginBottom="14dp"/>
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+  <EditText android:id="@+id/catalogSearch" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:hint="Pesquisar GGUF" android:singleLine="true" android:inputType="text" android:textSize="13sp" android:textColor="?attr/uiLabel" android:textColorHint="?attr/uiMuted" android:backgroundTint="?attr/uiBorder"/>
+  <Spinner android:id="@+id/catalogSort" android:layout_width="140dp" android:layout_height="48dp" android:contentDescription="Ordenação dos modelos"/>
+ </LinearLayout>
  <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="false"><LinearLayout android:id="@+id/catalogCards" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="12dp"/></ScrollView>
  <com.google.android.material.card.MaterialCardView android:id="@+id/downloadPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:layout_marginBottom="14dp" app:cardBackgroundColor="?attr/uiPanel" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:strokeWidth="1dp" app:strokeColor="?attr/uiBorder">
   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">

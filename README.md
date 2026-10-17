@@ -1,4 +1,6 @@
-# Nexora • v0.1.0-alpha.15 (versionCode 15)
+# Nexora • v0.1.0-alpha.16 (versionCode 16)
+
+**Alpha.16:** central de modelos com busca, ordenação, menu de ações e perfis reais de inferência por GGUF (Econômico, Equilibrado, Personalizado). Contexto, threads, temperatura, Top-P, Top-K, Min-P e penalidade de repetição são aplicados pelo motor pinned ao **próximo carregamento**; limite de resposta é usado no próximo envio. A interface de conversas foi atualizada com Nexora à direita e usuário à esquerda, formatação básica Markdown, copiar/detalhes e regeneração da última resposta com recarga do contexto. Barra de RAM mostra porcentagens disponíveis e em uso; painel expande/recolhe ao tocar no cabeçalho. Janela Recursos com ícones, diagnóstico compacto, filtros por sessão/versão e JSON salvo em Downloads/Nexora diretamente por MediaStore, sem upload. PDFs indicam extração parcial e somente trechos no prompt. Catálogo com busca/ordenação e aviso conservador de RAM. **Exige teste completo Android/JNI na CI e no aparelho** antes de publicar como validada.
 
 **Alpha.15:** painel de desempenho compacto com seta para detalhes, RAM disponível medida e barra proporcional. Temperatura exibida é da bateria; estado térmico vem do Android (código bruto e, se suportada, margem térmica). Progresso durante a geração é indeterminado, sem porcentagem artificial. Nenhum motor ou modelo é alterado.
 
@@ -61,7 +63,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.15-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.15-apk-debug` (sem Secrets).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.16-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.16-apk-debug` (sem Secrets).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

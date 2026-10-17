@@ -28,6 +28,8 @@ import java.util.Locale
 class ModelCatalogActivity : AppCompatActivity() {
     private lateinit var theme: ThemeOption
     private lateinit var downloads: ModelDownloads
+    private var catalogQuery=""
+    private var sortBy=0
     private lateinit var cards: LinearLayout
     private lateinit var panel: MaterialCardView
     private lateinit var progress: ProgressBar
@@ -50,6 +52,18 @@ class ModelCatalogActivity : AppCompatActivity() {
         title = findViewById(R.id.downloadTitle)
         cancel = findViewById(R.id.cancelDownload)
         findViewById<View>(R.id.backCatalog).setOnClickListener { finish() }
+        val search=findViewById<android.widget.EditText>(R.id.catalogSearch)
+        search.addTextChangedListener(object:android.text.TextWatcher {
+            override fun beforeTextChanged(s:CharSequence?,start:Int,count:Int,after:Int)=Unit
+            override fun onTextChanged(s:CharSequence?,start:Int,before:Int,count:Int){catalogQuery=s?.toString()?.trim().orEmpty();renderCards()}
+            override fun afterTextChanged(s:android.text.Editable?)=Unit
+        })
+        val sorter=findViewById<android.widget.Spinner>(R.id.catalogSort)
+        sorter.adapter=android.widget.ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf("Catálogo","Mais leve","Maior modelo"))
+        sorter.onItemSelectedListener=object:android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent:android.widget.AdapterView<*>?,view:View?,position:Int,id:Long){sortBy=position;renderCards()}
+            override fun onNothingSelected(parent:android.widget.AdapterView<*>?)=Unit
+        }
         cancel.setOnClickListener {
             MaterialAlertDialogBuilder(this).setTitle("Interromper transferência?")
                 .setMessage("O arquivo parcial será apagado. Você poderá iniciar outro download depois.")
@@ -91,7 +105,13 @@ class ModelCatalogActivity : AppCompatActivity() {
 
     private fun renderCards() {
         cards.removeAllViews()
-        ModelCatalog.models.forEach { model ->
+        val filtered=ModelCatalog.models.filter { it.label.contains(catalogQuery,true) || it.description.contains(catalogQuery,true) }
+        val ordered=when(sortBy) {
+            1->filtered.sortedBy{it.approximateBytes}
+            2->filtered.sortedByDescending{it.approximateBytes}
+            else->filtered
+        }
+        ordered.forEach { model ->
             val card = MaterialCardView(this).apply {
                 radius = dp(22).toFloat()
                 cardElevation = 0f
@@ -122,7 +142,12 @@ class ModelCatalogActivity : AppCompatActivity() {
             }
             header.addView(titleView, LinearLayout.LayoutParams(0, -2, 1f))
             val description = TextView(this).apply {
-                text = "${model.sizeLabel}  ·  ${model.description}"
+                val mem = android.app.ActivityManager.MemoryInfo()
+                (getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(mem)
+                val ramMiB = mem.availMem / 1_048_576
+                val fileMiB = model.approximateBytes / 1_048_576
+                text = "${model.sizeLabel}  ·  ${model.description}\nRAM disponível: $ramMiB MiB" +
+                    if (ramMiB < fileMiB + 300) " • RAM pode ser insuficiente; tamanho do arquivo não é RAM total." else " • carregamento não garantido."
                 textSize = 13f
                 setTextColor(ThemePreferences.mutedColor(this@ModelCatalogActivity))
                 setLineSpacing(dp(3).toFloat(), 1f)

@@ -61,6 +61,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var performanceRamLabel: TextView
     private lateinit var performanceThermalSummary: TextView
     private lateinit var performanceRamBar: ProgressBar
+    private lateinit var performanceRamSegments: LinearLayout
     private lateinit var performanceTitleStatus: TextView
     private lateinit var performanceToggle: TextView
     private lateinit var performanceDetails: LinearLayout
@@ -108,6 +109,7 @@ class ChatActivity : AppCompatActivity() {
         performanceRamLabel = findViewById(R.id.performanceRamLabel)
         performanceThermalSummary = findViewById(R.id.performanceThermalSummary)
         performanceRamBar = findViewById(R.id.performanceRamBar)
+        performanceRamSegments = findViewById(R.id.performanceRamSegments)
         performanceTitleStatus = findViewById(R.id.performanceTitleStatus)
         performanceToggle = findViewById(R.id.performanceToggle)
         performanceDetails = findViewById(R.id.performanceDetails)
@@ -115,12 +117,14 @@ class ChatActivity : AppCompatActivity() {
         performanceCpu = findViewById(R.id.performanceCpu)
         val expanded = prefs.getBoolean("performance_details_expanded", false)
         updatePerformanceExpansion(expanded)
-        performanceToggle.setOnClickListener {
+        val togglePanel: (View) -> Unit = {
             val next = performanceDetails.visibility != View.VISIBLE
             updatePerformanceExpansion(next)
             prefs.edit().putBoolean("performance_details_expanded", next).apply()
             displayMeter()
         }
+        performanceToggle.setOnClickListener(togglePanel)
+        findViewById<View>(R.id.performanceHeader).setOnClickListener(togglePanel)
         send = findViewById(R.id.sendMessage)
         stop = findViewById(R.id.stopGeneration)
         mode = findViewById(R.id.thinkMode)
@@ -144,7 +148,7 @@ class ChatActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.backChat).setOnClickListener { finish() }
         messages.addAll(store.load(chatId))
-        adapter = ChatAdapter(messages)
+        adapter = ChatAdapter(messages) { regenerateLast() }
         list.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
         list.adapter = adapter
         if (messages.isNotEmpty()) list.scrollToPosition(messages.lastIndex)
@@ -217,11 +221,11 @@ class ChatActivity : AppCompatActivity() {
         attachmentsRow.removeAllViews()
         store.pdfs(chatId).forEach { pdf ->
             val btn = com.google.android.material.button.MaterialButton(this).apply {
-                text="📄 ${pdf.name.take(30)} • ${pdf.pages} pág."
+                text="📄 ${pdf.name.take(23)} • ${pdf.pages} pág.${if(pdf.truncated) " • PARCIAL" else ""}"
                 textSize=11f;isAllCaps=false
                 setOnClickListener {
                     MaterialAlertDialogBuilder(this@ChatActivity).setTitle(pdf.name)
-                        .setMessage("Texto extraído localmente: ${pdf.text.length} caracteres. ${if(pdf.truncated) "Extração parcial." else ""} O conteúdo será consultado na próxima pergunta.")
+                        .setMessage("Texto extraído localmente: ${pdf.text.length} caracteres. ${if(pdf.truncated) "Extração parcial." else ""} O modelo recebe somente trechos selecionados (até 1600 caracteres por anexo). Isso não equivale à leitura integral do PDF.")
                         .setPositiveButton("Remover anexo") { _,_ ->store.deletePdf(pdf.id,chatId);renderPdfs()}
                         .setNegativeButton("Fechar",null).show()
                 }
@@ -241,7 +245,7 @@ class ChatActivity : AppCompatActivity() {
                 DiagnosticEvents.record(this@ChatActivity, "pdf.attach.ok", "pages=${pdf.pages} chars=${pdf.content.length} truncated=${pdf.partial}")
                 pdfDirty = true
                 renderPdfs()
-                status.text="PDF anexado: ${pdf.name}. Pergunte sobre seu conteúdo. ${if(pdf.partial) "Leitura parcial." else ""}"
+                status.text="PDF anexado: ${pdf.name}. IA recebe somente trechos; ${if(pdf.partial) "extração parcial de páginas." else "não leu o documento inteiro."}"
             } catch(e:Exception) {
                 DiagnosticEvents.record(this@ChatActivity, "pdf.attach.error", "type=${e.javaClass.simpleName}", "ERROR")
                 status.text="PDF não anexado: ${e.localizedMessage?.take(100)}"}
@@ -298,7 +302,8 @@ class ChatActivity : AppCompatActivity() {
         val responseIndex = messages.lastIndex
         var lastUiUpdateNs = 0L
         generationCancelReason = "none"
-        val generationLimit = if (thinking) 768 else 512
+        val configuredTokens = ModelSession.currentPath()?.let { ModelInferencePreferences.get(this, java.io.File(it)).maxTokens } ?: 512
+        val generationLimit = if (thinking) (configuredTokens * 3 / 2).coerceAtMost(1536) else configuredTokens
         generation = lifecycleScope.launch {
             try {
                 val pdfs = if (firstPrompt || pdfDirty) store.pdfs(chatId) else emptyList()
@@ -324,7 +329,10 @@ class ChatActivity : AppCompatActivity() {
                     }
                 val engineStats = ModelSession.engine(applicationContext).lastGenerationStats
                 lastNativeStats = engineStats
-                response.text = filter.finish().ifBlank { "(O modelo não produziu uma resposta final.)" }
+                val visibleFinal = filter.finish()
+                response.text = visibleFinal.ifBlank { "(O modelo não produziu texto visível. Pode ter emitido apenas raciocínio oculto.)" }
+                if (visibleFinal.isBlank()) DiagnosticEvents.record(this@ChatActivity,"inference.empty_visible",
+                    "nativeTokens=${engineStats?.generatedTokens ?: -1} reason=${engineStats?.reason ?: -1}","WARN")
                 displayMeter()
                 val outcome = GenerationOutcome.fromNative(engineStats?.reason)
                 status.text = outcome.status(generationLimit)
@@ -353,6 +361,35 @@ class ChatActivity : AppCompatActivity() {
                     refresh()
                     save()
                 }
+            }
+        }
+    }
+
+    /** Regenera apenas a última resposta. Reinicia o contexto para não herdar a resposta anterior. */
+    private fun regenerateLast() {
+        if (busy || preparingContext || !ModelSession.isReady(this) || messages.size < 2) return
+        val last=messages.lastOrNull() ?: return
+        val question=messages.getOrNull(messages.lastIndex-1) ?: return
+        if (last.role!="assistant" || question.role!="user") return
+        val original=question.text
+        busy=true;contextReady=false;refresh()
+        status.text="Reiniciando contexto para regenerar a última resposta..."
+        lifecycleScope.launch {
+            try {
+                if(!ModelSession.resetConversation(applicationContext,chatId)) error("Modelo indisponível")
+                messages.removeAt(messages.lastIndex)
+                messages.removeAt(messages.lastIndex)
+                adapter.notifyDataSetChanged()
+                prompt.setText(original)
+                contextReady=true
+                firstPrompt=true
+                pdfDirty=true
+                busy=false;refresh()
+                submit()
+            } catch(e:Exception) {
+                status.text="Não foi possível regenerar: ${e.localizedMessage?.take(90)}"
+                contextReady=ModelSession.isReady(this@ChatActivity)
+                busy=false;refresh()
             }
         }
     }
@@ -428,6 +465,7 @@ class ChatActivity : AppCompatActivity() {
             } ?: "—"
             performanceRamLabel.text = "RAM disponível: ${data.availableMiB}/${data.totalMiB} MiB"
             performanceRamBar.progress = ThermalDisplay.availableRamProgress(data.availableMiB, data.totalMiB)
+            RamUsageBar.render(this@ChatActivity,performanceRamSegments,data.availableMiB,data.totalMiB)
             performanceThermalSummary.text = ThermalDisplay.status(data.thermalText, data.thermalStatusCode)
             if (performanceDetails.visibility == View.VISIBLE) {
                 val cpuReading = cpuMeter.sample()
@@ -447,6 +485,7 @@ class ChatActivity : AppCompatActivity() {
             performanceBattery.text = "—"
             performanceRamLabel.text = "RAM indisponível"
             performanceRamBar.progress = 0
+            performanceRamSegments.removeAllViews()
             performanceThermalSummary.text = "Android: indisponível"
             performanceMemory.text = "Medição de memória indisponível"
             performanceThermal.text = "Estado térmico indisponível"

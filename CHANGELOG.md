@@ -1,5 +1,15 @@
 # Changelog Nexora
 
+## 0.1.0-alpha.16 (versionCode 16)
+- Biblioteca GGUF redesenhada: cartões, identificação amigável, tamanho/quantização, pesquisa e ordenação; menus de carregar, descarregar, detalhes, renomear, ajustes e excluir.
+- Perfis individuais reais de inferência. O JNI pinned recebe contexto 2048/4096/8192, threads 2–4, temperatura 0–1,5, Top-P, Top-K, Min-P, repeat penalty e limite de tokens; aplicado após recarregar o modelo.
+- Mensagens: usuário à esquerda, Nexora à direita, balões com tema; renderização segura e básica de Markdown, copiar, detalhes e regeneração da última resposta com contexto reinicializado.
+- Barra de RAM de altura ampliada, duas porcentagens reais com acessibilidade, expansão e minimização do desempenho pelo cabeçalho.
+- Diagnóstico compacto: filtro da última sessão/versão/todos, eventos recolhidos, ações de exportar/limpar acima do log e gravação direta via MediaStore em Downloads/Nexora com nome amigável e JSON preservado.
+- Pop-up Recursos do aparelho com ícones por medição, catálogo com busca, ordenação e aviso sobre RAM, PDF com indicação de extração/consulta por trechos.
+- Validação local sintática e estática; build Android, JNI com pinned upstream e testes em aparelho pendentes.
+
+
 ## 0.1.0-alpha.15 (versionCode 15)
 - Painel de desempenho compacto com velocidade, PSS, temperatura da bateria, RAM disponível real e barra referente à RAM, não à velocidade.
 - Expansão de detalhes com leitura térmica crua do Android, margem térmica se suportada, versão de métricas nativas, pico de PSS e identificação completa do GGUF.

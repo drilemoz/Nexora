@@ -9,29 +9,36 @@
   </LinearLayout>
   <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="VISÃO GERAL DO APARELHO" android:textStyle="bold" android:textSize="12sp" android:letterSpacing="0.12" android:textColor="?attr/uiAccent" android:layout_marginBottom="12dp"/>
   <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="20dp" app:cardElevation="0dp" app:cardBackgroundColor="?attr/uiPanel" app:strokeColor="?attr/uiBorder" app:strokeWidth="1dp">
-   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="17dp">
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="CPU • somente Nexora" android:textStyle="bold" android:textSize="17sp" android:textColor="?attr/uiLabel"/>
+   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="13dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="⚙ CPU • somente Nexora" android:textStyle="bold" android:textSize="15sp" android:textColor="?attr/uiLabel"/>
     <TextView android:id="@+id/diagCpu" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Calculando CPU..." android:textSize="13sp" android:textColor="?attr/uiMuted"/>
     <ProgressBar android:id="@+id/diagCpuProgress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="7dp" android:layout_marginTop="11dp" android:max="100" android:progressTint="?attr/uiAccent"/>
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="CPU total de outros aplicativos não é acessível sem privilégios Android." android:textColor="?attr/uiMuted" android:textSize="11sp"/>
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="17dp" android:layout_marginBottom="15dp" android:background="?attr/uiBorder"/>
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Memória • sistema e processo" android:textColor="?attr/uiLabel" android:textSize="17sp" android:textStyle="bold"/>
+    <LinearLayout android:id="@+id/diagDetails" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="CPU de outros aplicativos não é acessível sem privilégios Android." android:textColor="?attr/uiMuted" android:textSize="11sp"/>
+    </LinearLayout>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="10dp" android:layout_marginBottom="10dp" android:background="?attr/uiBorder"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="▣ Memória • sistema e processo" android:textColor="?attr/uiLabel" android:textSize="15sp" android:textStyle="bold"/>
     <TextView android:id="@+id/diagMemory" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="?attr/uiMuted" android:textSize="13sp" android:text="Obtendo uso da RAM..."/>
-    <ProgressBar android:id="@+id/diagMemoryProgress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="7dp" android:layout_marginTop="11dp" android:max="100" android:progressTint="?attr/uiAccent"/>
-    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="17dp" android:layout_marginBottom="15dp" android:background="?attr/uiBorder"/>
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Temperatura e pressão térmica" android:textColor="?attr/uiLabel" android:textStyle="bold" android:textSize="17sp"/>
+    <ProgressBar android:id="@+id/diagMemoryProgress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="1dp" android:visibility="gone" android:max="100" />
+    <LinearLayout android:id="@+id/diagRamSegments" android:layout_width="match_parent" android:layout_height="26dp" android:layout_marginTop="7dp" android:orientation="horizontal" android:background="?attr/uiBorder"/>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="10dp" android:layout_marginBottom="10dp" android:background="?attr/uiBorder"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="♨ Temperatura e estado térmico" android:textColor="?attr/uiLabel" android:textStyle="bold" android:textSize="15sp"/>
     <TextView android:id="@+id/diagThermal" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Aguardando sensores..." android:textColor="?attr/uiMuted" android:textSize="13sp"/>
+    <TextView android:id="@+id/diagExpand" android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical|end" android:text="Ver detalhes ⌄" android:textColor="?attr/uiAccent" android:textSize="12sp" android:clickable="true" android:focusable="true" android:background="?attr/selectableItemBackground"/>
    </LinearLayout>
   </com.google.android.material.card.MaterialCardView>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="12dp" android:baselineAligned="false">
+   <com.google.android.material.button.MaterialButton android:id="@+id/diagExport" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Salvar em Downloads" android:textSize="12sp" app:icon="@drawable/ic_download" android:layout_marginEnd="5dp"/>
+   <com.google.android.material.button.MaterialButton android:id="@+id/diagClear" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Limpar" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_marginStart="5dp"/>
+  </LinearLayout>
   <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="REGISTRO DE EXECUÇÃO" android:textStyle="bold" android:textSize="12sp" android:letterSpacing="0.12" android:textColor="?attr/uiAccent" android:layout_marginTop="24dp" android:layout_marginBottom="10dp"/>
+  <TextView android:id="@+id/diagFilter" android:layout_width="match_parent" android:layout_height="42dp" android:text="◷  Última sessão / todos  ▾" android:textSize="12sp" android:gravity="center_vertical" android:textColor="?attr/uiAccent" android:clickable="true" android:focusable="true" android:background="?attr/selectableItemBackground"/>
   <TextView android:id="@+id/diagCount" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Eventos armazenados localmente" android:textSize="12sp" android:textColor="?attr/uiMuted" android:layout_marginBottom="10dp"/>
   <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="18dp" app:cardElevation="0dp" app:cardBackgroundColor="?attr/uiPanel" app:strokeColor="?attr/uiBorder" app:strokeWidth="1dp">
    <TextView android:id="@+id/diagEvents" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:text="Sem eventos" android:fontFamily="monospace" android:textSize="12sp" android:lineSpacingExtra="3dp" android:textColor="?attr/uiLabel"/>
   </com.google.android.material.card.MaterialCardView>
-  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="18dp" android:baselineAligned="false">
-   <com.google.android.material.button.MaterialButton android:id="@+id/diagExport" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Exportar JSON" app:icon="@drawable/ic_download" android:layout_marginEnd="6dp"/>
-   <com.google.android.material.button.MaterialButton android:id="@+id/diagClear" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Limpar" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_marginStart="6dp"/>
-  </LinearLayout>
+
+  <TextView android:id="@+id/diagShowMore" android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center" android:text="Mostrar mais eventos ⌄" android:textColor="?attr/uiAccent" android:textSize="13sp" android:clickable="true" android:focusable="true" android:background="?attr/selectableItemBackground"/>
   <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Registros são mantidos somente neste aparelho. Não há upload automático. O monitor coleta amostras enquanto esta página está aberta, sem serviço permanente." android:textColor="?attr/uiMuted" android:textSize="12sp" android:lineSpacingExtra="4dp" android:layout_marginTop="14dp"/>
  </LinearLayout>
 </ScrollView>
