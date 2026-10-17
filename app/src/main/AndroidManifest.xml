@@ -3,6 +3,7 @@
   <!-- Internet somente para baixar modelos. Inferencia e historico permanecem locais. -->
   <uses-permission android:name="android.permission.INTERNET"/>
   <application
+      android:name=".NexoraApp"
       android:allowBackup="false"
       android:label="Nexora"
       android:icon="@mipmap/ic_launcher"
@@ -10,6 +11,7 @@
       android:theme="@style/Theme.Nexora"
       android:supportsRtl="true"
       android:usesCleartextTraffic="false">
+      <activity android:name=".DiagnosticsActivity" android:exported="false"/>
       <activity android:name=".ModelsActivity" android:exported="false"/>
       <activity android:name=".SettingsActivity" android:exported="false"/>
       <activity android:name=".ThemeActivity" android:exported="false"/>

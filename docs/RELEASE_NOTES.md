@@ -1,7 +1,7 @@
-# Nexora 0.1.0-alpha.9
+# Nexora 0.1.0-alpha.10
 
-Correção de compilação AAPT2 nos recursos do chat e carregamento automático do último GGUF bem-sucedido.
-
-Configurações → Carregar ao abrir (ativado por padrão). Enquanto carrega, banner na tela inicial com nome, tempo decorrido e estimativa de tempo restante/porcentagem somente se houver uma medição anterior confiável do mesmo arquivo. A estimativa não é progresso nativo de llama.cpp. Falha/interrupção de carga anterior exige tentativa manual.
-
-Compilação Android/NDK no Actions e testes em hardware real ainda pendentes. Sem novas permissões, modelos ou Secrets.
+- Novo ícone Diagnóstico na tela inicial: CPU do processo, RAM do sistema, memória Nexora, bateria, pressão térmica.
+- Log local de eventos de inferência, PDF, modelo e falhas, com exportação JSON e limpeza.
+- Corrigidas as 2 falhas do teste ModelCatalogTest da alpha.9.
+- Sem coleta remota e sem processamento permanente em segundo plano.
+- Verificar compilação Android e uso no dispositivo após publicar.

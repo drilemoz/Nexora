@@ -1,6 +1,17 @@
+# Histórico Nexora
+
+## 0.1.0-alpha.10 • 17/10/2026
+- Corrige os 2 testes do catálogo no workflow Build 4: quatro modelos, inclusive Qwen3 4B, e revisão fixada no repositório oficial para o Qwen3 4B.
+- Novo ícone de bug ao lado das Configurações na tela inicial e página exclusiva Diagnóstico.
+- Diagnóstico: CPU do processo relativa a um núcleo e à capacidade dos núcleos, RAM global do Android, PSS da Nexora, temperatura da bateria, pressão térmica; sem alegar acesso à CPU global.
+- Registro em JSONL com limite de 256 KiB, eventos de carregamento, contexto, geração, PDF, encerramentos inesperados; sem prompts, textos dos PDFs, senhas ou caminhos.
+- Botões para exportar JSON via seletor do Android e limpar registros após confirmação.
+- Amostragem de 3 segundos SOMENTE com a página aberta e log de métricas no máximo a cada 15 segundos. Zero serviço persistente/sem wakelock.
+- Compilação Gradle/Android e testes físicos pendentes.
+
 # Nexora • Histórico
 
-## 0.1.0-alpha.9 (versionCode 9)
+## 0.1.0-alpha.10 (versionCode 10)
 - Corrigido AAPT2: `android:horizontalScrollBarEnabled` inválido substituído por `android:scrollbars="none"` no chat.
 - Carregamento automático opcional (ativado por padrão) do último GGUF **carregado com sucesso**, interno ou baixado. A escolha fica em Configurações → Inteligência Artificial.
 - Indicador inicial com nome do modelo, tempo transcorrido e barra indeterminada; após uma carga medida do mesmo arquivo, apresenta porcentagem/ETA **estimados**, não porcentagem fornecida pelo llama.cpp.

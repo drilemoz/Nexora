@@ -4,6 +4,7 @@
  <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingTop="16dp" android:paddingBottom="19dp">
   <ImageView android:layout_width="46dp" android:layout_height="46dp" android:src="@drawable/ic_nexora_mark" android:padding="4dp" android:contentDescription="Logotipo Nexora"/>
   <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Nexora" android:textSize="29sp" android:textStyle="bold" android:textColor="?attr/uiLabel" android:layout_marginStart="8dp"/>
+  <ImageButton android:id="@+id/openDiagnostics" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_bug" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Diagnóstico e bugs"/>
   <ImageButton android:id="@+id/openSettings" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_settings" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Configurações"/>
  </LinearLayout>
  <com.google.android.material.card.MaterialCardView android:id="@+id/modelLoadingCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" android:layout_marginBottom="14dp" app:cardCornerRadius="18dp" app:cardElevation="0dp" app:strokeWidth="1dp" app:strokeColor="?attr/uiBorder" app:cardBackgroundColor="?attr/uiPanel">

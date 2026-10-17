@@ -73,6 +73,7 @@ object ModelSession {
                 return@withLock
             }
             val startMs = SystemClock.elapsedRealtime()
+            DiagnosticEvents.record(context, "model.load.start", "name=${model.name.take(95)} automatic=$automatic")
             mutableLoadState.value = ModelLoadState.Loading(model.name, startMs,
                 ModelStartup.estimatedDuration(context, model), automatic)
             try {
@@ -92,8 +93,10 @@ object ModelSession {
                 activeChat = null
                 val elapsed = SystemClock.elapsedRealtime() - startMs
                 ModelStartup.rememberSuccessful(context, model, elapsed)
+                DiagnosticEvents.record(context, "model.load.ready", "name=${model.name.take(95)} elapsedMs=$elapsed")
                 mutableLoadState.value = ModelLoadState.Ready(model.name)
             } catch (e: Exception) {
+                DiagnosticEvents.record(context, "model.load.error", "name=${model.name.take(95)} type=${e.javaClass.simpleName}", "ERROR")
                 path = null
                 activeChat = null
                 mutableLoadState.value = ModelLoadState.Problem(model.name,
@@ -112,6 +115,7 @@ object ModelSession {
             }
             path = null
             activeChat = null
+            DiagnosticEvents.record(context, "model.unload")
             mutableLoadState.value = ModelLoadState.Idle
         }
     }
@@ -121,6 +125,7 @@ object ModelSession {
         sessionMutex.withLock {
             if (!isReady(context)) return@withLock false
             if (activeChat == chatId) return@withLock true
+            DiagnosticEvents.record(context, "model.context.switch", "reset=${activeChat != null}")
             if (activeChat == null) { activeChat = chatId; return@withLock true }
             val current = requireNotNull(currentPath())
             val e = engine(context)

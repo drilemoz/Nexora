@@ -57,6 +57,7 @@ class ModelCatalogActivity : AppCompatActivity() {
                     if (validating?.isActive == true) {
                         toast("Aguarde o fim da verificação SHA-256")
                     } else {
+                        DiagnosticEvents.record(this@ModelCatalogActivity, "model.download.cancel", "id=${downloads.activeModel()?.id ?: "unknown"}")
                         downloads.cancel()
                         renderCards()
                         updateUi()
@@ -185,8 +186,8 @@ class ModelCatalogActivity : AppCompatActivity() {
             .setMessage("Arquivo de aproximadamente ${model.sizeLabel}. A transferência usa internet e pode consumir dados móveis. A conversa funciona offline depois de carregar o GGUF." +
                 if (model.id == "qwen3-4b") "\n\nATENÇÃO: modelo experimental de 4B. Os 2,5 GB são somente o arquivo; executar exige RAM adicional para contexto e motor. Pode falhar ou fechar em aparelhos com pouca RAM." else "")
             .setPositiveButton("Baixar") { _, _ ->
-                try { downloads.enqueue(model); renderCards(); updateUi() }
-                catch (e: Exception) { toast(e.localizedMessage ?: "Não foi possível iniciar") }
+                try { downloads.enqueue(model); DiagnosticEvents.record(this, "model.download.start", "id=${model.id}"); renderCards(); updateUi() }
+                catch (e: Exception) { DiagnosticEvents.record(this, "model.download.error", "id=${model.id} type=${e.javaClass.simpleName}", "ERROR"); toast(e.localizedMessage ?: "Não foi possível iniciar") }
             }
             .setNegativeButton("Agora não", null).show()
     }
@@ -230,8 +231,10 @@ class ModelCatalogActivity : AppCompatActivity() {
                     validating = lifecycleScope.launch {
                         try {
                             withContext(Dispatchers.IO) { downloads.finalizeVerified(model) }
+                            DiagnosticEvents.record(this@ModelCatalogActivity, "model.download.verified", "id=${model.id} sizeMb=${model.approximateBytes / 1000000}")
                             toast("Modelo verificado e instalado")
                         } catch (e: Exception) {
+                            DiagnosticEvents.record(this@ModelCatalogActivity, "model.download.hash_error", "id=${model.id} type=${e.javaClass.simpleName}", "ERROR")
                             status.text = "Não foi possível validar: ${e.localizedMessage?.take(110)}"
                             toast("Modelo rejeitado. Tente baixar novamente.")
                         } finally {
@@ -245,6 +248,7 @@ class ModelCatalogActivity : AppCompatActivity() {
                 }
             }
             DownloadManager.STATUS_FAILED -> {
+                DiagnosticEvents.record(this, "model.download.failed", "id=${model.id} reason=${p.reason}", "ERROR")
                 status.text = "Falha (código ${p.reason}). $bytesText"
                 toast("Download falhou (código ${p.reason}). Verifique a conexão.")
                 downloads.cancel()

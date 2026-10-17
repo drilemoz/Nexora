@@ -1,6 +1,12 @@
-# Nexora • v0.1.0-alpha.9 (versionCode 9)
+# Nexora • v0.1.0-alpha.10 (versionCode 10)
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+## Alpha.10: Diagnóstico e correção do Build 4
+
+- Ícone de bug ao lado da engrenagem; painel de CPU do processo, RAM Android, PSS da Nexora, temperatura da bateria e pressão térmica.
+- Eventos persistentes limitados e exportação JSON sob demanda. Sem upload, sem serviço permanente e sem registrar conteúdo de mensagens/PDFs.
+- Testes de catálogo atualizados de 3 para 4 modelos; URL Qwen3 4B fixada em commit.
 
 ## Alpha.9: Carregamento automático e correção do build
 
@@ -30,7 +36,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.9-apk-debug` e `Nexora-v0.1.0-alpha.9-apk-release-assinado` (se os quatro Secrets configurados).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.10-apk-debug` e `Nexora-v0.1.0-alpha.10-apk-release-assinado` (se os quatro Secrets configurados).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações
@@ -107,10 +113,16 @@ Novo catálogo: **Qwen3 4B Q4_K_M** (2,5 GB; SHA-256 validado conforme página o
 O gráfico horizontal é uma escala visual de 0 a 30 fragmentos/s, saturando acima desse valor; rótulos de fluidez são faixas indicativas da geração, não prova de precisão do conteúdo.
 
 
-## Carregamento automático (alpha.9)
+## Carregamento automático (alpha.10)
 - Abra Configurações → Modelos de IA e carregue um GGUF ao menos uma vez com sucesso.
 - A Nexora registra apenas nome e pasta privada do último modelo. Por padrão, tenta carregá-lo na próxima abertura do app.
 - O ajuste Carregar ao abrir, em Configurações, pode ser desativado.
 - Enquanto carrega, a tela inicial mostra o nome, o tempo decorrido e a barra animada. A porcentagem e o tempo restante aparecem apenas se houver medição anterior **do mesmo arquivo com o mesmo tamanho e data de modificação**, como estimativas.
 - Se o Android encerrar o processo durante um carregamento automático, a tentativa seguinte é bloqueada por segurança; carregue manualmente o GGUF e escolha outro modelo se estiver exigindo muita RAM.
 - Não é um preload de segundo plano: a abertura continua possível antes do modelo terminar.
+
+
+## Diagnóstico alpha.10
+Acesse o ícone de bug à esquerda de Configurações na tela inicial. Há leituras atualizadas a cada 3 segundos **somente enquanto a página estiver visível**, uma fila circular persistente de eventos locais e exportação manual como JSON. CPU representa apenas consumo deste processo Android, em equivalentes de núcleo; o Android não disponibiliza medição global confiável sem privilégios. Registros não incluem conteúdo de mensagens, PDFs ou credenciais.
+
+No Build 4, 2 testes de catálogo falharam por esperarem 3 modelos e um link não fixado para o 4B; agora o catálogo usa 4 e revision SHA estável.

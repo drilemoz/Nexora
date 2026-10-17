@@ -21,7 +21,7 @@ object ModelCatalog {
         "smollm2-360m" to "ab63027800638cfa050c6e9dc03428cc02934d3d",
         "qwen3-06b" to "9e43cb1438c9523e11af66d6b4b2a424a1aa0e39",
         "qwen3-17b" to "136153a4f0744c0fa07aa2807d15c4bc6dd28709",
-        "qwen3-4b" to "main",
+        "qwen3-4b" to "a9a60d009fa7ff9606305047c2bf77ac25dbec49",
     )
     internal fun revisionFor(id: String): String = revisions.getValue(id)
     val models: List<CatalogModel> = listOf(

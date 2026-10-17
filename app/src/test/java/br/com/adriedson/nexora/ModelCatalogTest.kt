@@ -5,9 +5,9 @@ import org.junit.Test
 
 class ModelCatalogTest {
     @Test fun catalogHasStableUniqueEntries() {
-        assertEquals(3, ModelCatalog.models.size)
-        assertEquals(3, ModelCatalog.models.map { it.id }.distinct().size)
-        assertEquals(3, ModelCatalog.models.map { it.filename }.distinct().size)
+        assertEquals(4, ModelCatalog.models.size)
+        assertEquals(4, ModelCatalog.models.map { it.id }.distinct().size)
+        assertEquals(4, ModelCatalog.models.map { it.filename }.distinct().size)
         assertTrue(ModelCatalog.models.all { ModelCatalogChecks.isValidEntry(it) })
     }
     @Test fun urlsUsePinnedCommitAndGguf() {

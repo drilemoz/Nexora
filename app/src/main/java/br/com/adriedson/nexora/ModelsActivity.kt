@@ -171,11 +171,13 @@ class ModelsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val imported = withContext(Dispatchers.IO) { copyModel(uri) }
+                DiagnosticEvents.record(this@ModelsActivity, "model.import.ok", "sizeMb=${imported.length() / 1_000_000}")
                 message.text = "${imported.name} importado. Abra Modelos para carregar."
                 toast("Modelo importado")
             } catch (_: CancellationException) {
                 message.text = "Importação interrompida."
             } catch (e: Exception) {
+                DiagnosticEvents.record(this@ModelsActivity, "model.import.error", "type=${e.javaClass.simpleName}", "ERROR")
                 message.text = "Falha ao importar: ${e.localizedMessage?.take(120)}"
                 toast("Falha na importação")
             } finally {

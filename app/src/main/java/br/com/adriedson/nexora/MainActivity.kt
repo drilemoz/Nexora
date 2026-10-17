@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         empty=findViewById(R.id.historyEmpty)
         search=findViewById(R.id.searchConversations)
         history.layoutManager=LinearLayoutManager(this)
+        findViewById<View>(R.id.openDiagnostics).setOnClickListener { startActivity(Intent(this,DiagnosticsActivity::class.java)) }
         findViewById<View>(R.id.openSettings).setOnClickListener { startActivity(Intent(this,SettingsActivity::class.java)) }
         findViewById<View>(R.id.newConversation).setOnClickListener { open(store.create(ModelSession.currentName())) }
         search.addTextChangedListener(object: TextWatcher {

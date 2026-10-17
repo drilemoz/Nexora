@@ -189,10 +189,13 @@ class ChatActivity : AppCompatActivity() {
                 val pdf=withContext(Dispatchers.IO) { PdfReader.extract(applicationContext,uri) }
                 check(store.pdfs(chatId).size < 5) { "Limite de 5 anexos por conversa" }
                 store.addPdf(chatId,pdf.name,pdf.pages,pdf.content,pdf.partial)
+                DiagnosticEvents.record(this@ChatActivity, "pdf.attach.ok", "pages=${pdf.pages} chars=${pdf.content.length} truncated=${pdf.partial}")
                 pdfDirty = true
                 renderPdfs()
                 status.text="PDF anexado: ${pdf.name}. Pergunte sobre seu conteúdo. ${if(pdf.partial) "Leitura parcial." else ""}"
-            } catch(e:Exception) {status.text="PDF não anexado: ${e.localizedMessage?.take(100)}"}
+            } catch(e:Exception) {
+                DiagnosticEvents.record(this@ChatActivity, "pdf.attach.error", "type=${e.javaClass.simpleName}", "ERROR")
+                status.text="PDF não anexado: ${e.localizedMessage?.take(100)}"}
             finally {attachButton.isEnabled=true}
         }
     }
@@ -219,6 +222,7 @@ class ChatActivity : AppCompatActivity() {
         adapter.notifyItemRangeInserted(messages.size - 2, 2)
         list.scrollToPosition(messages.lastIndex)
         meter.start(SystemClock.elapsedRealtimeNanos())
+        DiagnosticEvents.record(this, "inference.start", "model=${ModelSession.currentName()?.take(80) ?: "unknown"} thinking=$thinking")
         displayMeter()
         busy = true
         status.text = if (thinking) "Nexora raciocinando no dispositivo..." else "Nexora gerando resposta..."
@@ -246,12 +250,16 @@ class ChatActivity : AppCompatActivity() {
                 response.text = filter.finish().ifBlank { "(O modelo não produziu uma resposta final.)" }
                 displayMeter()
                 status.text = "Resposta concluída • sem conexão com servidores"
+                val reading = meter.reading(SystemClock.elapsedRealtimeNanos())
+                DiagnosticEvents.record(this@ChatActivity, "inference.done", "fragments=${reading.fragments} fragPerSec=${reading.fragmentsPerSecond?.toInt() ?: -1} firstSec=${reading.timeToFirstSeconds?.toInt() ?: -1}")
             } catch (_: CancellationException) {
                 response.text = filter.finish().ifBlank { "(Geração interrompida.)" }
                 status.text = "Geração interrompida."
+                DiagnosticEvents.record(this@ChatActivity, "inference.cancel")
             } catch (e: Exception) {
                 response.text = filter.finish().ifBlank { "(Não foi possível gerar a resposta.)" }
                 status.text = "Erro de inferência: ${e.localizedMessage?.take(120)}"
+                DiagnosticEvents.record(this@ChatActivity, "inference.error", "type=${e.javaClass.simpleName}", "ERROR")
             } finally {
                 withContext(NonCancellable + Dispatchers.Main) {
                     val i = messages.indexOfLast { it === response }
