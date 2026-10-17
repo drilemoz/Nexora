@@ -244,6 +244,8 @@ class ChatActivity : AppCompatActivity() {
         val qwen = ModelSession.currentName()?.contains("qwen3", true) == true
         val instruction = if (qwen) "\n${if (thinking) "/think" else "/no_think"}" else ""
         val filter = ThinkingTextFilter()
+        val responseIndex = messages.lastIndex
+        var lastUiUpdateNs = 0L
         generationCancelReason = "none"
         generation = lifecycleScope.launch {
             try {
@@ -255,12 +257,18 @@ class ChatActivity : AppCompatActivity() {
                 ModelSession.engine(applicationContext)
                     .sendUserPrompt(composed + instruction, if (thinking) 768 else 512)
                     .collect { token ->
-                        meter.onFragment(token, SystemClock.elapsedRealtimeNanos())
-                        displayMeter()
-                        response.text = filter.append(token)
-                        if (response.text.isNotEmpty()) status.text = "Resposta local em andamento..."
-                        val index = messages.indexOfLast { it === response }
-                        if (index >= 0) { adapter.notifyItemChanged(index); list.scrollToPosition(index) }
+                        val nowNs = SystemClock.elapsedRealtimeNanos()
+                        meter.onFragment(token, nowNs)
+                        val visible = filter.append(token)
+                        // Atualizar a UI no maximo ~8 vezes/s, sem perder fragmentos.
+                        if (lastUiUpdateNs == 0L || nowNs - lastUiUpdateNs >= 125_000_000L) {
+                            response.text = visible
+                            if (visible.isNotEmpty()) status.text = "Resposta local em andamento..."
+                            displayMeter()
+                            adapter.notifyItemChanged(responseIndex)
+                            list.scrollToPosition(responseIndex)
+                            lastUiUpdateNs = nowNs
+                        }
                     }
                 response.text = filter.finish().ifBlank { "(O modelo não produziu uma resposta final.)" }
                 displayMeter()
@@ -326,8 +334,9 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun sampleDevice() {
-        runCatching { DeviceSampler.capture(applicationContext) }.onSuccess { data ->
+    private suspend fun sampleDevice() {
+        // Debug.getMemoryInfo pode bloquear; amostrar fora da thread principal.
+        withContext(Dispatchers.Default) { runCatching { DeviceSampler.capture(applicationContext) } }.onSuccess { data ->
             performanceMemory.text = "Nexora ~${data.processPssMiB} MiB PSS  •  RAM disponível ${data.availableMiB}/${data.totalMiB} MiB" +
                 if (data.lowMemory) "  ⚠ memória baixa" else ""
             val temp = data.batteryC?.let { String.format(Locale("pt", "BR"), "%.1f °C", it) } ?: "indisponível"
@@ -341,12 +350,11 @@ class ChatActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (!::performanceMemory.isInitialized) return
-        sampleDevice()
         samplingJob?.cancel()
         samplingJob = lifecycleScope.launch {
             while (isActive) {
                 sampleDevice()
-                delay(2000)
+                delay(5000)
             }
         }
         if (::appliedTheme.isInitialized && appliedTheme != ThemePreferences.get(this)) recreate()

@@ -4,8 +4,8 @@
 Importe o `.txt` privado fornecido separadamente via GitHub Manager > Repositório > Secrets > Importar, selecionando o repositório do Nexora.
 São quatro: `KEYSTORE_BASE64` (PKCS12 em Base64 sem quebras), `KEYSTORE_PASSWORD`, `KEY_ALIAS` e `KEY_PASSWORD`.
 
-*Sem Secrets*: gera APK Debug com certificado de debug do runner, que pode mudar de uma compilação para outra.
-*Com os quatro Secrets*: gera APK Debug e APK Release com **o mesmo certificado fixo**, permitindo atualizações futuras quando applicationId permanecer igual.
+*Sem Secrets*: gera **apenas APK Debug**, com certificado de debug do runner, que pode mudar de uma compilação para outra.
+*Com os quatro Secrets*: gera **apenas APK Release**, com certificado fixo, permitindo atualizações futuras quando applicationId permanecer igual.
 
 ## Segurança
 - **Não** publique o `.txt`, JSON, `.p12` nem cole a Base64 no código, GitHub, Issues ou chat público.

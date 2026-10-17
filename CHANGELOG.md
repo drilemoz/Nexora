@@ -1,5 +1,13 @@
 # Histórico Nexora
 
+## 0.1.0-alpha.12 • 17/10/2026
+- CI publica uma variante por execucao: Release assinado com Secrets ou Debug fallback; elimina a lista duplicada de instaladores no GitHub Manager.
+- Patches auditaveis no motor fixado: n_ctx 8192 → 4096 e correcoes do limite de geracao e da contagem apos truncamento do prompt. Preserva o commit upstream. Janelas grandes exigem testes antes de futuras mudancas.
+- Removidos logs do texto de prompts e token a token no JNI, reduzindo custo de diagnosticos e vazamento acidental em Logcat.
+- Filtro de raciocinio incremental em vez de reprocessar texto inteiro por fragmento; atualizacao visual limitada a ~8 fps.
+- Leitura PSS e bateria fora da thread principal, com intervalo de 5 s enquanto a conversa esta aberta.
+- Sem novos recursos. Aceleracao nativa/threads nao ajustadas sem benchmark, pois podem aumentar calor e consumo.
+
 ## 0.1.0-alpha.11 • 17/10/2026
 - Carregamento do último modelo e cargas manuais transferidos para um escopo do processo, evitando cancelamentos por recriação da tela.
 - Modal de carregamento centralizado e bloqueante, com Cancelar cooperativo, tempo decorrido e informação honesta sobre progresso nativo indisponível.

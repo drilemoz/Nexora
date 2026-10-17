@@ -21,6 +21,25 @@ class ThinkingTextFilterTest {
     @Test fun reasoningOnlyIsNotShown() {
         assertEquals("", ThinkingTextFilter.visibleText("<think>oculto</think>"))
     }
+    @Test fun incrementalMatchesCompleteAcrossEverySplit() {
+        val samples = listOf(
+            "ola <think>razao longa</think> resposta final",
+            "<think>interno</think>Árvore",
+            "texto simples com < etiqueta",
+            "antes<think>oculto</think>depois<thi",
+            "<think>nunca fechou",
+            "áéíóú<not-tag>fim"
+        )
+        for (sample in samples) {
+            for (split in 0..sample.length) {
+                val f = ThinkingTextFilter()
+                f.append(sample.substring(0, split))
+                f.append(sample.substring(split))
+                assertEquals("Falha em split=$split texto=$sample",
+                    ThinkingTextFilter.visibleText(sample), f.finish())
+            }
+        }
+    }
     @Test fun unusualTextOutsideBlockIsPreserved() {
         assertEquals("antesdepois", ThinkingTextFilter.visibleText("antes<think>oculto</think>depois"))
     }

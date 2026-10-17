@@ -1,6 +1,12 @@
-# Nexora • v0.1.0-alpha.11 (versionCode 11)
+# Nexora • v0.1.0-alpha.12 (versionCode 12)
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+## Alpha.12: desempenho e publicacao unica de APK
+- GitHub Actions gera apenas um APK de instalacao: Release assinado quando os quatro Secrets estao presentes, Debug sem Secrets. A mesma assinatura estavel continua valida.
+- Motor fixado ao mesmo commit, com patch checado no bootstrap: janela de contexto 4096 (antes 8192) para reduzir memoria KV; corrige contador de tokens gerados e posicao efetiva apos truncamento de prompt.
+- Motor suprime logs de prompts e de cada token de entrada, evitando custo e exposição de texto no Logcat. Streaming usa filtro incremental e atualizacao da UI no maximo 8 vezes/s, reduzindo trabalho redundante. Amostras de PSS e estado termico a cada 5s fora da thread principal.
+- Limitacao: contexto de 4096 pode truncar PDFs e historicos grandes. Nao significa melhora garantida de tokens/s. Validar no aparelho.
 
 ## Alpha.11: interface, gerenciamento e carregamento
 
@@ -44,7 +50,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.11-apk-debug` e `Nexora-v0.1.0-alpha.11-apk-release-assinado` (se os quatro Secrets configurados).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.12-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.12-apk-debug` (sem Secrets).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

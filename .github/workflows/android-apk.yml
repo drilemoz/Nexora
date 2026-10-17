@@ -63,7 +63,8 @@ jobs:
             echo 'enabled=true' >> "$GITHUB_OUTPUT"
             echo 'Assinatura estavel habilitada.'
           fi
-      - name: Compilar APK Debug ARM64
+      - name: Compilar APK Debug ARM64 (sem assinatura estavel)
+        if: steps.signing.outputs.enabled != 'true'
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -77,10 +78,10 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew :app:assembleRelease --stacktrace --max-workers=2
       - name: Disponibilizar APK Debug
-        if: success()
+        if: success() && steps.signing.outputs.enabled != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Nexora-v0.1.0-alpha.11-apk-debug
+          name: Nexora-v0.1.0-alpha.12-apk-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -88,7 +89,7 @@ jobs:
         if: success() && steps.signing.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Nexora-v0.1.0-alpha.11-apk-release-assinado
+          name: Nexora-v0.1.0-alpha.12-apk-release-assinado
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
