@@ -1,244 +1,124 @@
 package br.com.adriedson.nexora
 
-import android.app.ActivityManager
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.os.StatFs
-import android.provider.OpenableColumns
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
+import android.widget.EditText
+import android.widget.PopupMenu
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.button.MaterialButton
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import kotlin.coroutines.coroutineContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+/** Entrada do app: somente conversas e pesquisa; modelos ficam nas Configurações. */
 class MainActivity : AppCompatActivity() {
-    private lateinit var activeTheme: ThemeOption
-    private lateinit var status: TextView
-    private lateinit var detail: TextView
-    private lateinit var message: TextView
-    private lateinit var chat: MaterialButton
-    private lateinit var importer: MaterialButton
-    private lateinit var manage: MaterialButton
-    private lateinit var catalog: MaterialButton
-    private var busy = false
-    private val picker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) importModel(uri)
-    }
-
+    private lateinit var theme: ThemeOption
+    private lateinit var store: ChatStore
+    private lateinit var history: RecyclerView
+    private lateinit var search: EditText
+    private lateinit var empty: TextView
     override fun onCreate(savedInstanceState: Bundle?) {
-        activeTheme = ThemePreferences.applyBeforeCreate(this)
+        theme=ThemePreferences.applyBeforeCreate(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        status = findViewById(R.id.modelStatus)
-        detail = findViewById(R.id.deviceStatus)
-        message = findViewById(R.id.stateLabel)
-        chat = findViewById(R.id.openChat)
-        importer = findViewById(R.id.importModel)
-        manage = findViewById(R.id.manageModels)
-        catalog = findViewById(R.id.openCatalog)
-        findViewById<View>(R.id.openSettings).setOnClickListener {
-            if (!busy) startActivity(Intent(this, SettingsActivity::class.java))
-        }
-        importer.setOnClickListener { if (!busy) picker.launch(arrayOf("*/*")) }
-        manage.setOnClickListener { if (!busy) showModels() }
-        catalog.setOnClickListener { if (!busy) startActivity(Intent(this, ModelCatalogActivity::class.java)) }
-        chat.setOnClickListener {
-            if (ModelSession.isReady(this)) startActivity(Intent(this, ChatActivity::class.java))
-            else toast("Carregue um modelo em Modelos antes de conversar")
-        }
-        savedInstanceState?.getString(STATE_MESSAGE)?.let { message.text = it }
+        store=ChatStore(this)
+        store.migrateLegacy()
+        history=findViewById(R.id.historyList)
+        empty=findViewById(R.id.historyEmpty)
+        search=findViewById(R.id.searchConversations)
+        history.layoutManager=LinearLayoutManager(this)
+        findViewById<View>(R.id.openSettings).setOnClickListener { startActivity(Intent(this,SettingsActivity::class.java)) }
+        findViewById<View>(R.id.newConversation).setOnClickListener { open(store.create(ModelSession.currentName())) }
+        search.addTextChangedListener(object: TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start:Int,count:Int,after:Int) = Unit
+            override fun onTextChanged(s: CharSequence?,start:Int,before:Int,count:Int) { refresh() }
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
         refresh()
     }
-
     override fun onResume() {
         super.onResume()
-        if (::activeTheme.isInitialized && activeTheme != ThemePreferences.get(this)) {
-            recreate()
-        } else if (::status.isInitialized) refresh()
+        if (::theme.isInitialized && theme != ThemePreferences.get(this)) { recreate(); return }
+        if (::store.isInitialized) refresh()
     }
-
-    private fun modelsDir(): File = File(filesDir, "models").also { check(it.isDirectory || it.mkdirs()) }
-    private fun models(): List<File> {
-        val local = modelsDir().listFiles().orEmpty().toList()
-        val downloaded = runCatching { ModelDownloads(this).dir().listFiles().orEmpty().toList() }
-            .getOrDefault(emptyList())
-        return (local + downloaded).filter { it.isFile && it.name.endsWith(".gguf", true) }
-            .sortedBy { it.name.lowercase() }
-    }
-
-    private fun showModels() {
-        val all = models()
-        if (all.isEmpty()) {
-            MaterialAlertDialogBuilder(this).setTitle("Biblioteca vazia")
-                .setMessage("Baixe um modelo no catálogo ou importe um arquivo GGUF existente.")
-                .setPositiveButton("Explorar") { _, _ -> startActivity(Intent(this, ModelCatalogActivity::class.java)) }
-                .setNegativeButton("Fechar", null).show()
-            return
-        }
-        val labels = all.map { "${it.name}\n${it.length() / 1_048_576} MiB" } +
-            if (ModelSession.isReady(this)) listOf("Descarregar modelo ativo • liberar RAM") else emptyList()
-        MaterialAlertDialogBuilder(this).setTitle("Modelos instalados")
-            .setItems(labels.toTypedArray()) { _, index ->
-                if (index == all.size) unload() else {
-                    val selected = all[index]
-                    MaterialAlertDialogBuilder(this).setTitle(selected.name)
-                        .setMessage("Carregar para conversar ou remover esta cópia do aparelho.")
-                        .setPositiveButton("Carregar") { _, _ -> load(selected) }
-                        .setNeutralButton("Excluir") { _, _ -> delete(selected) }
-                        .setNegativeButton("Voltar", null).show()
-                }
-            }.setNegativeButton("Fechar", null).show()
-    }
-
-    private fun delete(file: File) {
-        if (file.absolutePath == ModelSession.currentPath()) {
-            toast("Descarregue o modelo antes de excluir")
-            return
-        }
-        MaterialAlertDialogBuilder(this).setTitle("Excluir ${file.name}?")
-            .setMessage("O arquivo privado será apagado. Esta ação não exclui o original de outra pasta.")
-            .setPositiveButton("Excluir") { _, _ ->
-                toast(if (file.delete()) "Modelo removido" else "Falha ao excluir modelo")
-                refresh()
-            }.setNegativeButton("Cancelar", null).show()
-    }
-
-    private fun load(file: File) {
-        if (busy) return
-        busy = true
-        message.text = "Carregando ${file.name} na memória..."
-        refresh()
-        lifecycleScope.launch {
-            try {
-                ModelSession.load(applicationContext, file)
-                message.text = "Pronto! Toque em Conversar para começar."
-            } catch (e: Exception) {
-                message.text = "Falha ao carregar: ${e.localizedMessage?.take(140)}"
-                toast("Modelo não carregado")
-            } finally {
-                busy = false
-                refresh()
-            }
-        }
-    }
-
-    private fun unload() {
-        if (busy) return
-        busy = true
-        message.text = "Descarregando modelo..."
-        refresh()
-        lifecycleScope.launch {
-            try {
-                ModelSession.unload(applicationContext)
-                message.text = "RAM liberada. Selecione outro modelo quando quiser."
-            } catch (e: Exception) {
-                message.text = "Falha ao descarregar: ${e.localizedMessage?.take(120)}"
-            } finally {
-                busy = false
-                refresh()
-            }
-        }
-    }
-
-    private fun importModel(uri: Uri) {
-        if (busy) return
-        busy = true
-        message.text = "Importando GGUF. Mantenha a Nexora aberta..."
-        refresh()
-        lifecycleScope.launch {
-            try {
-                val imported = withContext(Dispatchers.IO) { copyModel(uri) }
-                message.text = "${imported.name} importado. Abra Modelos para carregar."
-                toast("Modelo importado")
-            } catch (_: CancellationException) {
-                message.text = "Importação interrompida."
-            } catch (e: Exception) {
-                message.text = "Falha ao importar: ${e.localizedMessage?.take(120)}"
-                toast("Falha na importação")
-            } finally {
-                busy = false
-                refresh()
-            }
-        }
-    }
-
-    private suspend fun copyModel(uri: Uri): File {
-        var name = "modelo.gguf"
-        var size = -1L
-        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
-            if (c.moveToFirst()) {
-                c.getColumnIndex(OpenableColumns.DISPLAY_NAME).takeIf { it >= 0 && !c.isNull(it) }?.let { name = c.getString(it) }
-                c.getColumnIndex(OpenableColumns.SIZE).takeIf { it >= 0 && !c.isNull(it) }?.let { size = c.getLong(it) }
-            }
-        }
-        val safe = ModelFiles.safeName(name)
-        val dir = modelsDir()
-        if (size > 0) {
-            val free = StatFs(dir.absolutePath).availableBytes
-            check(size < free && free - size >= 80L * 1024 * 1024) { "Espaço insuficiente para importar" }
-        }
-        val base = safe.substringBeforeLast('.')
-        var target = File(dir, safe)
-        var n = 2
-        while (target.exists()) target = File(dir, "$base-${n++}.gguf")
-        val pending = File.createTempFile("import-", ".partial", dir)
-        try {
-            contentResolver.openInputStream(uri)?.use { input ->
-                val magic = ByteArray(4)
-                var readTotal = 0
-                while (readTotal < magic.size) {
-                    val nread = input.read(magic, readTotal, 4 - readTotal)
-                    if (nread < 0) break
-                    readTotal += nread
-                }
-                check(readTotal == 4 && ModelFiles.hasGgufMagic(magic)) { "Formato GGUF inválido" }
-                FileOutputStream(pending).use { out ->
-                    out.write(magic)
-                    val buffer = ByteArray(1024 * 1024)
-                    while (true) {
-                        coroutineContext.ensureActive()
-                        val nread = input.read(buffer)
-                        if (nread < 0) break
-                        out.write(buffer, 0, nread)
-                    }
-                    out.fd.sync()
-                }
-            } ?: error("O arquivo selecionado não pôde ser aberto")
-            check(pending.renameTo(target)) { "Falha ao finalizar importação" }
-            return target
-        } finally { pending.delete() }
-    }
-
+    private fun open(id:String) { startActivity(Intent(this,ChatActivity::class.java).putExtra(ChatActivity.EXTRA_CHAT_ID,id)) }
     private fun refresh() {
-        val name = ModelSession.currentName()
-        status.text = name ?: "Nenhum modelo carregado"
-        val memory = ActivityManager.MemoryInfo()
-        (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memory)
-        detail.text = "${if (name == null) "Aguardando modelo" else "● Offline • ARM64"}  ·  ${memory.availMem / 1_048_576} MiB de RAM livres"
-        chat.isEnabled = !busy && ModelSession.isReady(this)
-        importer.isEnabled = !busy
-        manage.isEnabled = !busy
-        catalog.isEnabled = !busy
+        val items=store.list(search.text.toString())
+        empty.visibility=if(items.isEmpty()) View.VISIBLE else View.GONE
+        empty.text=if(search.text.isBlank()) "Sem conversas ainda. Toque em Nova conversa para começar." else "Nenhuma conversa encontrada."
+        history.adapter=ConversationAdapter(items,::open,::showActions)
     }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        outState.putString(STATE_MESSAGE, message.text.toString())
-        super.onSaveInstanceState(outState)
+    private fun showActions(view:View, item:Conversation) {
+        val menu=PopupMenu(this,view)
+        menu.menu.add("Renomear")
+        menu.menu.add(if(item.pinned) "Desafixar" else "Fixar")
+        menu.menu.add("Excluir")
+        menu.setOnMenuItemClickListener { selected ->
+            when(selected.title.toString()) {
+                "Renomear" -> {
+                    val input=EditText(this).apply { setText(item.title);setSelection(text.length);setSingleLine(true) }
+                    MaterialAlertDialogBuilder(this).setTitle("Renomear conversa")
+                        .setView(input).setPositiveButton("Salvar") { _,_ ->
+                            runCatching { store.rename(item.id,input.text.toString()) };refresh()
+                        }.setNegativeButton("Cancelar",null).show()
+                }
+                "Fixar","Desafixar" -> {store.pin(item.id,!item.pinned);refresh()}
+                "Excluir" -> MaterialAlertDialogBuilder(this).setTitle("Excluir conversa?")
+                    .setMessage("Mensagens e textos PDF anexados nesta conversa serão removidos. Os modelos GGUF continuarão instalados.")
+                    .setPositiveButton("Excluir") { _,_ ->store.delete(item.id);refresh()}
+                    .setNegativeButton("Cancelar",null).show()
+            }
+            true
+        }
+        menu.show()
     }
+}
 
-    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
-    companion object { private const val STATE_MESSAGE = "status" }
+class ConversationAdapter(
+    private val items:List<Conversation>,
+    private val onOpen:(String)->Unit,
+    private val onMenu:(View,Conversation)->Unit
+): RecyclerView.Adapter<ConversationAdapter.Holder>() {
+    class Holder(v: View):RecyclerView.ViewHolder(v) {
+        val title:TextView=v.findViewById(R.id.conversationTitle)
+        val model:TextView=v.findViewById(R.id.conversationModel)
+        val section:TextView=v.findViewById(R.id.conversationSection)
+        val menu:View=v.findViewById(R.id.conversationMenu)
+    }
+    override fun onCreateViewHolder(p:android.view.ViewGroup,type:Int)=Holder(
+        android.view.LayoutInflater.from(p.context).inflate(R.layout.item_conversation,p,false))
+    override fun getItemCount()=items.size
+    override fun onBindViewHolder(h:Holder,pos:Int) {
+        val c=items[pos]
+        h.title.text=(if(c.pinned) "★  " else "")+c.title
+        h.model.text=c.model
+        val day=java.util.Calendar.getInstance().apply {timeInMillis=c.updated}
+        val today=java.util.Calendar.getInstance()
+        val heading=when {
+            c.pinned->"FIXADAS"
+            day.get(java.util.Calendar.YEAR)==today.get(java.util.Calendar.YEAR) && day.get(java.util.Calendar.DAY_OF_YEAR)==today.get(java.util.Calendar.DAY_OF_YEAR)->"HOJE"
+            day.get(java.util.Calendar.YEAR)==today.get(java.util.Calendar.YEAR) && day.get(java.util.Calendar.DAY_OF_YEAR)==today.get(java.util.Calendar.DAY_OF_YEAR)-1->"ONTEM"
+            else->"ANTERIORES"
+        }
+        val previous=if(pos>0) items[pos-1] else null
+        val prevHeading=previous?.let { p ->
+            val cal=java.util.Calendar.getInstance().apply {timeInMillis=p.updated}
+            when { p.pinned->"FIXADAS";cal.get(java.util.Calendar.YEAR)==today.get(java.util.Calendar.YEAR) && cal.get(java.util.Calendar.DAY_OF_YEAR)==today.get(java.util.Calendar.DAY_OF_YEAR)->"HOJE";
+                cal.get(java.util.Calendar.YEAR)==today.get(java.util.Calendar.YEAR) && cal.get(java.util.Calendar.DAY_OF_YEAR)==today.get(java.util.Calendar.DAY_OF_YEAR)-1->"ONTEM";else->"ANTERIORES" }
+        }
+        h.section.visibility=if(heading!=prevHeading) View.VISIBLE else View.GONE
+        h.section.text=heading
+        h.itemView.setOnClickListener { onOpen(c.id) }
+        h.menu.setOnClickListener { onMenu(it,c) }
+    }
 }

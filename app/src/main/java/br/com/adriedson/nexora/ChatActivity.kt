@@ -1,12 +1,16 @@
 package br.com.adriedson.nexora
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.LinearLayout
+import android.widget.ImageButton
+import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -29,6 +33,17 @@ import java.util.Locale
 class ChatActivity : AppCompatActivity() {
     private lateinit var appliedTheme: ThemeOption
     private lateinit var adapter: ChatAdapter
+    private lateinit var chatId: String
+    private lateinit var attachmentsRow: LinearLayout
+    private lateinit var attachButton: ImageButton
+    private var contextReady = false
+    private var preparingContext = false
+    private var pdfDirty = false
+    private var loadedPath: String? = null
+    private var firstPrompt = true
+    private val pdfPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if(uri!=null) attachPdf(uri)
+    }
     private lateinit var store: ChatStore
     private lateinit var list: RecyclerView
     private lateinit var prompt: EditText
@@ -54,13 +69,9 @@ class ChatActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         appliedTheme = ThemePreferences.applyBeforeCreate(this)
         super.onCreate(savedInstanceState)
-        if (!ModelSession.isReady(this)) {
-            Toast.makeText(this, "Carregue um modelo na tela inicial", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-        setContentView(R.layout.activity_chat)
         store = ChatStore(applicationContext)
+        chatId = intent.getStringExtra(EXTRA_CHAT_ID)?.takeIf { store.exists(it) } ?: store.create(ModelSession.currentName())
+        setContentView(R.layout.activity_chat)
         prompt = findViewById(R.id.promptInput)
         status = findViewById(R.id.stateLabel)
         performanceSpeed = findViewById(R.id.performanceSpeed)
@@ -74,9 +85,16 @@ class ChatActivity : AppCompatActivity() {
         stop = findViewById(R.id.stopGeneration)
         mode = findViewById(R.id.thinkMode)
         list = findViewById(R.id.messages)
+        attachmentsRow = findViewById(R.id.pdfAttachments)
+        attachButton = findViewById(R.id.attachPdf)
+        attachButton.setOnClickListener { if (!busy) pdfPicker.launch(arrayOf("application/pdf")) }
+        findViewById<TextView>(R.id.chatHeading).text = store.get(chatId)?.title ?: "Conversa"
+        findViewById<View>(R.id.chatModelName).setOnClickListener {
+            startActivity(Intent(this, ModelsActivity::class.java))
+        }
         findViewById<TextView>(R.id.chatModelName).text = ModelSession.currentName() ?: "Modelo não carregado"
         findViewById<View>(R.id.backChat).setOnClickListener { finish() }
-        messages.addAll(store.load())
+        messages.addAll(store.load(chatId))
         adapter = ChatAdapter(messages)
         list.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
         list.adapter = adapter
@@ -108,7 +126,60 @@ class ChatActivity : AppCompatActivity() {
         send.setOnClickListener { submit() }
         stop.setOnClickListener { status.text = "Interrompendo geração..."; generation?.cancel() }
         updateMode()
+        renderPdfs()
         refresh()
+        prepareChatContext()
+    }
+    private fun prepareChatContext() {
+        if (preparingContext) return
+        preparingContext = true
+        contextReady = false
+        refresh()
+        lifecycleScope.launch {
+            try {
+                if (ModelSession.isReady(applicationContext)) {
+                    status.text = "Preparando contexto desta conversa..."
+                    contextReady = ModelSession.prepareChat(applicationContext, chatId)
+                    if (contextReady) loadedPath = ModelSession.currentPath()
+                }
+                if (!contextReady) status.text = "Abra Configurações → Modelos de IA e carregue um GGUF. Seu histórico está salvo."
+                else status.text = "Conversa pronta • processamento offline"
+            } catch(e:Exception) {
+                status.text = "Falha ao preparar modelo: ${e.localizedMessage?.take(95)}"
+            } finally { preparingContext = false; refresh() }
+        }
+    }
+    private fun renderPdfs() {
+        attachmentsRow.removeAllViews()
+        store.pdfs(chatId).forEach { pdf ->
+            val btn = com.google.android.material.button.MaterialButton(this).apply {
+                text="📄 ${pdf.name.take(30)} • ${pdf.pages} pág."
+                textSize=11f;isAllCaps=false
+                setOnClickListener {
+                    MaterialAlertDialogBuilder(this@ChatActivity).setTitle(pdf.name)
+                        .setMessage("Texto extraído localmente: ${pdf.text.length} caracteres. ${if(pdf.truncated) "Extração parcial." else ""} O conteúdo será consultado na próxima pergunta.")
+                        .setPositiveButton("Remover anexo") { _,_ ->store.deletePdf(pdf.id,chatId);renderPdfs()}
+                        .setNegativeButton("Fechar",null).show()
+                }
+            }
+            attachmentsRow.addView(btn)
+        }
+    }
+    private fun attachPdf(uri: Uri) {
+        if(busy) return
+        status.text="Lendo PDF localmente..."
+        attachButton.isEnabled=false
+        lifecycleScope.launch {
+            try {
+                val pdf=withContext(Dispatchers.IO) { PdfReader.extract(applicationContext,uri) }
+                check(store.pdfs(chatId).size < 5) { "Limite de 5 anexos por conversa" }
+                store.addPdf(chatId,pdf.name,pdf.pages,pdf.content,pdf.partial)
+                pdfDirty = true
+                renderPdfs()
+                status.text="PDF anexado: ${pdf.name}. Pergunte sobre seu conteúdo. ${if(pdf.partial) "Leitura parcial." else ""}"
+            } catch(e:Exception) {status.text="PDF não anexado: ${e.localizedMessage?.take(100)}"}
+            finally {attachButton.isEnabled=true}
+        }
     }
 
     private fun updateMode() {
@@ -122,10 +193,11 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun submit() {
-        if (busy || !ModelSession.isReady(this)) return
+        if (busy || !contextReady || !ModelSession.isReady(this)) return
         val userText = prompt.text.toString().trim()
         if (userText.isEmpty()) return
         prompt.text.clear()
+        val previous=if(firstPrompt) messages.toList() else emptyList()
         messages.add(ChatMessage("user", userText))
         val response = ChatMessage("assistant", "")
         messages.add(response)
@@ -141,8 +213,13 @@ class ChatActivity : AppCompatActivity() {
         val filter = ThinkingTextFilter()
         generation = lifecycleScope.launch {
             try {
+                val pdfs = if (firstPrompt || pdfDirty) store.pdfs(chatId) else emptyList()
+                val composed = if (firstPrompt || pdfs.isNotEmpty())
+                    PdfPrompt.compose(userText, pdfs, if(firstPrompt) previous else emptyList()) else userText
+                firstPrompt = false
+                pdfDirty = false
                 ModelSession.engine(applicationContext)
-                    .sendUserPrompt(userText + instruction, if (thinking) 768 else 512)
+                    .sendUserPrompt(composed + instruction, if (thinking) 768 else 512)
                     .collect { token ->
                         meter.onFragment(token, SystemClock.elapsedRealtimeNanos())
                         displayMeter()
@@ -174,13 +251,14 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun save() {
-        runCatching { store.save(messages) }
+        runCatching { store.save(chatId,messages,ModelSession.currentName()) }
             .onFailure { status.text = "Não foi possível salvar o histórico: ${it.localizedMessage?.take(100)}" }
     }
 
     private fun refresh() {
-        send.isEnabled = !busy && ModelSession.isReady(this)
+        send.isEnabled = !busy && contextReady && ModelSession.isReady(this)
         prompt.isEnabled = !busy
+        attachButton.isEnabled = !busy
         stop.visibility = if (busy) View.VISIBLE else View.GONE
         send.visibility = if (busy) View.GONE else View.VISIBLE
         updateMode()
@@ -233,6 +311,14 @@ class ChatActivity : AppCompatActivity() {
             }
         }
         if (::appliedTheme.isInitialized && appliedTheme != ThemePreferences.get(this)) recreate()
+        else if (::store.isInitialized && !preparingContext && !busy &&
+            (loadedPath != ModelSession.currentPath() ||
+                (ModelSession.isReady(this) && ModelSession.activeConversationId() != chatId))) {
+            contextReady = false
+            firstPrompt = true
+            findViewById<TextView>(R.id.chatModelName).text = ModelSession.currentName() ?: "Modelo não carregado"
+            prepareChatContext()
+        } else if (::store.isInitialized && !contextReady && !preparingContext && ModelSession.isReady(this) && !busy) prepareChatContext()
     }
 
     override fun onPause() {
@@ -241,6 +327,7 @@ class ChatActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    companion object { const val EXTRA_CHAT_ID="chat_id" }
     override fun onStop() {
         generation?.cancel() // sem inferência silenciosa em segundo plano
         super.onStop()

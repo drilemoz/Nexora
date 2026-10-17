@@ -11,8 +11,8 @@ android {
         applicationId = "br.com.adriedson.nexora"
         minSdk = 33 // Requisito atual do módulo Android oficial do llama.cpp
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.1.0-alpha.7"
+        versionCode = 8
+        versionName = "0.1.0-alpha.8"
         ndk { abiFilters += "arm64-v8a" }
     }
 
@@ -64,5 +64,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     testImplementation(libs.junit)
 }

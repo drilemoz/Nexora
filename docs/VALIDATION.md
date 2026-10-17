@@ -1,3 +1,10 @@
+# Verificações Nexora 0.1.0-alpha.8
+
+- XML/recursos e referências cruzadas de views inspecionados; Kotlin PSI sem erros sintáticos.
+- `PdfPrompt` testado via compilador Kotlin/JVM em sete cenários (limites, extração, anexos, texto de pergunta, histórico).
+- A validação local não compila todas as bibliotecas Android e não confirma o uso real de SQLite ou PDFBox em dispositivo.
+- Novas verificações necessárias no GitHub Actions: `:app:testDebugUnitTest`, `:app:assembleDebug`, assinatura Release e testes com PDF digital, PDF só imagem, PDF protegido por senha, arquivo corrompido e arquivo grande; testar troca de chats com modelo carregado, temas, rotação e seleção de arquivos.
+
 # Verificações Nexora 0.1.0-alpha.7
 - Fonte: alpha.5 do projeto IA Local, com mudança sequencial de versão e pacote.
 - Testes locais de estrutura/XML, links internos, configuração do workflow, assinaturas e parser puro de `<think>` listados no relatório da entrega.

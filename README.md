@@ -1,12 +1,47 @@
-# Nexora • v0.1.0-alpha.7 (versionCode 6)
+# Nexora • v0.1.0-alpha.8 (versionCode 8)
 
-Nexora é um aplicativo Android **nativo Kotlin** de IA local, desenvolvido a partir do projeto IA Local. Executa GGUF offline usando o binding Android do **llama.cpp**. Baixa modelos via Hugging Face somente por ação explícita. Não usa servidor de inferência, API paga, anúncios ou telemetria.
+Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
 
-## Identidade e migração
-- Nome no launcher: **Nexora**. Android `applicationId` e `namespace`: **`br.com.adriedson.nexora`**.
-- **MUDANÇA DE PACOTE:** o Android considera a Nexora outro app. Ela **não substitui automaticamente** `br.com.adriedson.ialocal` nem importa os modelos e conversas guardados no sandbox do app antigo. A assinatura permanente é a mesma se os Secrets existentes forem usados. Os dois APKs podem coexistir; configure os Secrets no repositório novo ou existente.
-- Ícone adaptativo próprio integrado em `mipmap-anydpi-v26/ic_launcher.xml`, marca vetorial na interface.
-- Nenhuma keystore, senha, token ou modelo GGUF incluído no código-fonte.
+## Alpha.8: Conversas, PDFs e modelos
+
+- **Nova tela inicial** baseada no layout de referência: Nexora, Nova conversa, busca no histórico, seções Hoje/Ontem/Anteriores/Fixadas, menu de três pontos para Renomear/Fixar/Excluir. O modelo não precisa estar carregado para consultar conversas antigas.
+- **Histórico SQLite** em `nexora_history.db`, uma conversa por ID com mensagens e PDFs independentes; mantém até 200 mensagens por conversa. Tenta migrar `conversation.json` da alpha.7 para uma nova conversa e renomeia o arquivo original para `conversation.migrated.json` somente após salvar. Não apaga arquivo em caso de erro.
+- **Isolamento de contexto:** um modelo em memória; ao alternar para uma conversa diferente a engine é descarregada e recarregada antes de responder, e parte das últimas mensagens da conversa é incluída no primeiro prompt para continuidade. Isso pode causar espera e não reconstrói perfeitamente sessões longas.
+- **PDF offline:** botão de clipe no chat, seletor SAF, extração local de texto com `com.tom-roush:pdfbox-android:2.0.27.0` (Apache 2.0). Salva texto extraído no banco associado à conversa e exibe chips de anexos, removíveis. Admite PDF com até 12 MiB, extrai até 40 páginas e 24 mil caracteres (truncamento informado), até cinco documentos por conversa. Usa trechos de até 1600 caracteres de até dois PDFs mais recentes por pergunta. Não extrai texto de documentos digitalizados sem OCR; não envia arquivos a servidor.
+- **Gerenciamento de modelos movido** para `Configurações → Modelos de IA`, onde há três botões Importar, Modelos e Baixar, relação de GGUF instalados com tamanho real, Carregar/Excluir e resumo do espaço livre/total e espaço ocupado pelos GGUF. Catálogo e barra de downloads em MB continuam.
+- Mantidos temas, medidor de desempenho, controle Qwen3 Direto/Pensar, downloads com SHA-256 e assinatura estável com os quatro Secrets existentes. Identificador Android `br.com.adriedson.nexora` inalterado.
+
+## Como usar
+
+1. Abra Nexora: a página principal lista suas conversas e permite criar outras.
+2. Configurações → **Modelos de IA** → Baixar ou Importar GGUF → Carregar. O modelo é único em memória.
+3. Volte à tela inicial e toque Nova conversa ou em uma já existente. O modelo escolhido aparece no cabeçalho do chat, que permite abrir o gerenciador se necessário.
+4. Toque no clipe 📎 para selecionar um PDF com texto (até 12 MiB). Aguarde a extração; um chip com nome/páginas aparecerá. Pergunte sobre o PDF. Apenas o texto relevante e limitado é oferecido ao modelo; ele pode errar.
+5. Use a busca por títulos e conteúdo, ou o menu de cada chat para fixar, renomear e excluir, com confirmação para exclusão.
+
+## Build e requisitos
+
+- Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
+- ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.8-apk-debug` e `Nexora-v0.1.0-alpha.8-apk-release-assinado` (se os quatro Secrets configurados).
+- Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
+
+## Limitações
+
+- Alpha de desenvolvimento: testes de build Gradle Android, UI, banco SQLite e extração PDF no telefone ainda pendentes; verificações locais não substituem esses testes.
+- PDFs protegidos por senha ou só imagens exigem tratamento/OCR não implementado. Documentos grandes são parcialmente extraídos e modelos pequenos recebem somente trechos reduzidos; a Nexora não analisa integralmente arquivos extensos.
+- Armazenamento "total/livre" refere-se ao volume de dados acessível via `StatFs(filesDir)`, não necessariamente à capacidade comercial do aparelho. O total de GGUF soma arquivos nos diretórios privados da Nexora; arquivos em outros aplicativos não entram na conta.
+- Modelos de IA podem inventar respostas ou interpretar instruções presentes em PDF como texto de comando apesar do aviso no prompt. Não executar automaticamente código ou ações sugeridas pelo PDF.
+- Após troca entre chats, o modelo recarrega para isolar contexto e pode demorar. O histórico textual resumido não recria exatamente o contexto interno anterior. Memória, temperatura e desempenho dependem do aparelho.
+- Migração só dentro do mesmo package `br.com.adriedson.nexora`. O app anterior IA Local, com identificador diferente, permanece isolado pelo Android.
+
+## Licenças
+
+`llama.cpp` (MIT), `PdfBox-Android` (Apache 2.0), modelos e pesos com licenças independentes.
+
+---
+
+## Histórico anterior (alpha.7)
 
 ## Novo na alpha.7
 - Tela inicial reconstruída com identidade Nexora, painel do modelo ativo, botão **Conversar** e ações **Importar**, **Modelos** e **Baixar** na mesma linha, com espaçamento e ícones.

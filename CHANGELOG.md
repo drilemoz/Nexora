@@ -1,3 +1,11 @@
+## 0.1.0-alpha.8
+- Nova página inicial de conversas seguindo referência enviada, busca, novo chat, pin/rename/delete, ordenação temporal.
+- Histórico SQLite com chats independentes, migração conservadora do conversation.json da alpha.7 e isolamento do contexto da engine.
+- Suporte inicial a PDFs offline: SAF, PDFBox Android, extração de texto com limites, chips por conversa e trechos no prompt.
+- Gerenciamento de modelos em Configurações, lista de tamanhos reais GGUF e medidor de armazenamento disponível/total.
+- Mantidos temas, medidor de desempenho, download verificado, secrets de assinatura e identificador do aplicativo.
+- Build Android, integração PDF e testes físicos pendentes.
+
 ## 0.1.0-alpha.7
 - Medidor local no chat: régua horizontal indicativa de fluidez, velocidade estimada de fragmentos/s, latência para primeira saída, RAM disponível, PSS do processo, temperatura da bateria e pressão térmica. Atualização de leitura a cada 2 segundos apenas com tela visível.
 - Catálogo: Qwen3 4B Q4_K_M oficial (2,5 GB), SHA-256 e confirmação de risco de falta de RAM.

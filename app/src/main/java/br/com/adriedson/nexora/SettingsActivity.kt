@@ -16,6 +16,7 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<View>(R.id.chooseTheme).setOnClickListener {
             startActivity(Intent(this, ThemeActivity::class.java))
         }
+        findViewById<View>(R.id.manageAiModels).setOnClickListener { startActivity(Intent(this,ModelsActivity::class.java)) }
         updateLabel()
     }
 

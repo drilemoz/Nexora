@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+ android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent" android:background="?attr/uiSurface"
+ android:paddingStart="18dp" android:paddingEnd="18dp">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:paddingTop="20dp" android:paddingBottom="20dp">
+  <ImageView android:layout_width="52dp" android:layout_height="52dp" android:background="@color/nexora_icon_bg" android:padding="5dp" android:src="@drawable/ic_nexora_mark" android:contentDescription="Símbolo Nexora"/>
+  <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
+   <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nexora" android:textColor="?attr/uiLabel" android:textSize="28sp" android:textStyle="bold"/>
+   <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Inteligência no seu dispositivo" android:textColor="?attr/uiMuted" android:textSize="12sp"/>
+  </LinearLayout>
+  <ImageButton android:id="@+id/backFromModels" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_arrow_back" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Voltar"/>
+ </LinearLayout>
+ <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ARMAZENAMENTO E MODELOS" android:textStyle="bold" android:textSize="12sp" android:textColor="?attr/uiAccent" android:letterSpacing="0.14" android:layout_marginBottom="9dp"/>
+ <TextView android:id="@+id/storageInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Calculando armazenamento..." android:textColor="?attr/uiLabel" android:textSize="20sp" android:textStyle="bold" android:layout_marginTop="7dp"/>
+ <TextView android:id="@+id/libraryUsage" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Modelos ocupam..." android:textColor="?attr/uiMuted" android:textSize="13sp" android:layout_marginTop="5dp" android:layout_marginBottom="14dp"/>
+ <ProgressBar android:id="@+id/storageUsedBar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="7dp" android:max="100" android:progress="0" android:progressTint="?attr/uiAccent" android:layout_marginBottom="14dp"/>
+ <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardBackgroundColor="?attr/uiPanel" app:cardCornerRadius="24dp" app:cardElevation="0dp" app:strokeColor="?attr/uiBorder" app:strokeWidth="1dp">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="18dp">
+   <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MODELO EM EXECUÇÃO" android:textSize="11sp" android:textStyle="bold" android:textColor="?attr/uiMuted" android:letterSpacing="0.1"/>
+   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="10dp" android:gravity="center_vertical">
+    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+     <TextView android:id="@+id/modelStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Nenhum modelo carregado" android:textColor="?attr/uiLabel" android:textStyle="bold" android:textSize="16sp" android:maxLines="2" android:ellipsize="end"/>
+     <TextView android:id="@+id/deviceStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="ARM64 • IA offline" android:textSize="12sp" android:textColor="?attr/uiMuted"/>
+    </LinearLayout>
+    <com.google.android.material.button.MaterialButton android:id="@+id/openChat" android:layout_width="wrap_content" android:layout_height="52dp" android:layout_marginStart="8dp" android:text="Conversar" android:textAllCaps="false" android:textSize="12sp" app:icon="@drawable/ic_message" app:iconSize="18dp" app:iconPadding="6dp"/>
+   </LinearLayout>
+   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/uiBorder" android:layout_marginTop="18dp" android:layout_marginBottom="14dp"/>
+   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+    <com.google.android.material.button.MaterialButton android:id="@+id/importModel" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:layout_marginEnd="5dp" android:minWidth="0dp" android:paddingStart="3dp" android:paddingEnd="3dp" android:text="Importar" android:textSize="12sp" android:textAllCaps="false" app:icon="@drawable/ic_import" app:iconSize="16dp" app:iconPadding="3dp"/>
+    <com.google.android.material.button.MaterialButton android:id="@+id/manageModels" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:layout_marginStart="5dp" android:layout_marginEnd="5dp" android:minWidth="0dp" android:paddingStart="3dp" android:paddingEnd="3dp" android:text="Modelos" android:textSize="12sp" android:textAllCaps="false" app:icon="@drawable/ic_models" app:iconSize="16dp" app:iconPadding="3dp"/>
+    <com.google.android.material.button.MaterialButton android:id="@+id/openCatalog" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="52dp" android:layout_marginStart="5dp" android:minWidth="0dp" android:paddingStart="3dp" android:paddingEnd="3dp" android:text="Baixar" android:textSize="12sp" android:textAllCaps="false" app:icon="@drawable/ic_download" app:iconSize="16dp" app:iconPadding="3dp"/>
+   </LinearLayout>
+  </LinearLayout>
+ </com.google.android.material.card.MaterialCardView>
+ <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"><LinearLayout android:id="@+id/installedModelList" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/></ScrollView>
+ <TextView android:id="@+id/stateLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Selecione um modelo ou use o catálogo." android:textColor="?attr/uiMuted" android:textSize="12sp" android:paddingBottom="12dp"/>
+</LinearLayout>

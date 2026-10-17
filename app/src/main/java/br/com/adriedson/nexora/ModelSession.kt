@@ -12,7 +12,9 @@ import java.io.File
 /** Um único modelo por processo. Não persiste uma seleção falsa após o processo morrer. */
 object ModelSession {
     @Volatile private var path: String? = null
+    @Volatile private var activeChat: String? = null
     fun currentPath(): String? = path
+    fun activeConversationId(): String? = activeChat
     fun currentName(): String? = path?.takeIf { File(it).isFile }?.let { File(it).name }
     fun engine(context: Context): InferenceEngine = AiChat.getInferenceEngine(context.applicationContext)
     fun isReady(context: Context): Boolean =
@@ -30,6 +32,7 @@ object ModelSession {
             else -> Unit
         }
         path = null
+        activeChat = null
         engine.loadModel(model.absolutePath)
         path = model.absolutePath
     }
@@ -41,5 +44,27 @@ object ModelSession {
             else -> Unit
         }
         path = null
+        activeChat = null
+    }
+
+    /** The JNI engine remembers prior tokens; reset it when opening a different conversation. */
+    suspend fun prepareChat(context: Context, chatId: String): Boolean = withContext(Dispatchers.IO) {
+        if (!isReady(context)) return@withContext false
+        if (activeChat == chatId) return@withContext true
+        if (activeChat == null) {
+            activeChat = chatId
+            return@withContext true
+        }
+        val current = requireNotNull(currentPath())
+        val e = engine(context)
+        if (e.state.value is InferenceEngine.State.ModelReady) {
+            e.cleanUp()
+            path = null
+            activeChat = null
+            e.loadModel(current)
+            path = current
+            activeChat = chatId
+            true
+        } else false
     }
 }
