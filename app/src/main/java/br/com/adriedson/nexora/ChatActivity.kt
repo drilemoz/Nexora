@@ -2,10 +2,12 @@ package br.com.adriedson.nexora
 
 import android.content.Context
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.View
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -15,11 +17,14 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 class ChatActivity : AppCompatActivity() {
     private lateinit var appliedTheme: ThemeOption
@@ -28,6 +33,15 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var list: RecyclerView
     private lateinit var prompt: EditText
     private lateinit var status: TextView
+    private lateinit var performanceSpeed: TextView
+    private lateinit var performanceGauge: ProgressBar
+    private lateinit var performanceGrade: TextView
+    private lateinit var performanceLatency: TextView
+    private lateinit var performanceMemory: TextView
+    private lateinit var performanceThermal: TextView
+    private lateinit var performanceNote: TextView
+    private val meter = GenerationMeter()
+    private var samplingJob: Job? = null
     private lateinit var send: ImageButton
     private lateinit var stop: MaterialButton
     private lateinit var mode: MaterialButton
@@ -49,6 +63,13 @@ class ChatActivity : AppCompatActivity() {
         store = ChatStore(applicationContext)
         prompt = findViewById(R.id.promptInput)
         status = findViewById(R.id.stateLabel)
+        performanceSpeed = findViewById(R.id.performanceSpeed)
+        performanceGauge = findViewById(R.id.performanceGauge)
+        performanceGrade = findViewById(R.id.performanceGrade)
+        performanceLatency = findViewById(R.id.performanceLatency)
+        performanceMemory = findViewById(R.id.performanceMemory)
+        performanceThermal = findViewById(R.id.performanceThermal)
+        performanceNote = findViewById(R.id.performanceNote)
         send = findViewById(R.id.sendMessage)
         stop = findViewById(R.id.stopGeneration)
         mode = findViewById(R.id.thinkMode)
@@ -110,6 +131,8 @@ class ChatActivity : AppCompatActivity() {
         messages.add(response)
         adapter.notifyItemRangeInserted(messages.size - 2, 2)
         list.scrollToPosition(messages.lastIndex)
+        meter.start(SystemClock.elapsedRealtimeNanos())
+        displayMeter()
         busy = true
         status.text = if (thinking) "Nexora raciocinando no dispositivo..." else "Nexora gerando resposta..."
         refresh()
@@ -121,12 +144,15 @@ class ChatActivity : AppCompatActivity() {
                 ModelSession.engine(applicationContext)
                     .sendUserPrompt(userText + instruction, if (thinking) 768 else 512)
                     .collect { token ->
+                        meter.onFragment(token, SystemClock.elapsedRealtimeNanos())
+                        displayMeter()
                         response.text = filter.append(token)
                         if (response.text.isNotEmpty()) status.text = "Resposta local em andamento..."
                         val index = messages.indexOfLast { it === response }
                         if (index >= 0) { adapter.notifyItemChanged(index); list.scrollToPosition(index) }
                     }
                 response.text = filter.finish().ifBlank { "(O modelo não produziu uma resposta final.)" }
+                displayMeter()
                 status.text = "Resposta concluída • sem conexão com servidores"
             } catch (_: CancellationException) {
                 response.text = filter.finish().ifBlank { "(Geração interrompida.)" }
@@ -139,6 +165,7 @@ class ChatActivity : AppCompatActivity() {
                     val i = messages.indexOfLast { it === response }
                     if (i >= 0) adapter.notifyItemChanged(i)
                     busy = false
+                    displayMeter()
                     refresh()
                     save()
                 }
@@ -159,9 +186,59 @@ class ChatActivity : AppCompatActivity() {
         updateMode()
     }
 
+    private fun displayMeter() {
+        val reading = meter.reading(SystemClock.elapsedRealtimeNanos())
+        performanceSpeed.text = reading.fragmentsPerSecond?.let {
+            String.format(Locale("pt", "BR"), "%.1f frag./s ≈ tok/s", it)
+        } ?: "— frag./s"
+        val rate = reading.fragmentsPerSecond
+        performanceGauge.progress = (rate ?: 0.0).coerceIn(0.0, 30.0).toInt()
+        performanceGrade.text = when {
+            rate == null -> "Aguardando amostras"
+            rate < 3.0 -> "Geração lenta"
+            rate < 10.0 -> "Geração utilizável"
+            rate < 20.0 -> "Geração boa"
+            else -> "Geração fluida"
+        }
+        performanceLatency.text = reading.timeToFirstSeconds?.let {
+            String.format(Locale("pt", "BR"), "%.2f s até resposta", it)
+        } ?: "Aguardando resposta"
+        performanceNote.text = when {
+            reading.fragments == 0 -> "A velocidade aparece após os primeiros fragmentos gerados."
+            reading.fragments < 2 -> "Recebendo o primeiro fragmento..."
+            else -> "${reading.fragments} fragmentos emitidos • estimativa, não contador nativo de tokens"
+        }
+    }
+
+    private fun sampleDevice() {
+        runCatching { DeviceSampler.capture(applicationContext) }.onSuccess { data ->
+            performanceMemory.text = "Nexora ~${data.processPssMiB} MiB PSS  •  RAM disponível ${data.availableMiB}/${data.totalMiB} MiB" +
+                if (data.lowMemory) "  ⚠ memória baixa" else ""
+            val temp = data.batteryC?.let { String.format(Locale("pt", "BR"), "%.1f °C", it) } ?: "indisponível"
+            performanceThermal.text = "Bateria $temp  •  pressão térmica ${data.thermalText}"
+        }.onFailure {
+            performanceMemory.text = "Medição de memória indisponível"
+            performanceThermal.text = "Temperatura e pressão térmica indisponíveis"
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        sampleDevice()
+        samplingJob?.cancel()
+        samplingJob = lifecycleScope.launch {
+            while (isActive) {
+                sampleDevice()
+                delay(2000)
+            }
+        }
         if (::appliedTheme.isInitialized && appliedTheme != ThemePreferences.get(this)) recreate()
+    }
+
+    override fun onPause() {
+        samplingJob?.cancel()
+        samplingJob = null
+        super.onPause()
     }
 
     override fun onStop() {

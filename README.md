@@ -1,4 +1,4 @@
-# Nexora • v0.1.0-alpha.6 (versionCode 6)
+# Nexora • v0.1.0-alpha.7 (versionCode 6)
 
 Nexora é um aplicativo Android **nativo Kotlin** de IA local, desenvolvido a partir do projeto IA Local. Executa GGUF offline usando o binding Android do **llama.cpp**. Baixa modelos via Hugging Face somente por ação explícita. Não usa servidor de inferência, API paga, anúncios ou telemetria.
 
@@ -8,7 +8,7 @@ Nexora é um aplicativo Android **nativo Kotlin** de IA local, desenvolvido a pa
 - Ícone adaptativo próprio integrado em `mipmap-anydpi-v26/ic_launcher.xml`, marca vetorial na interface.
 - Nenhuma keystore, senha, token ou modelo GGUF incluído no código-fonte.
 
-## Novo na alpha.6
+## Novo na alpha.7
 - Tela inicial reconstruída com identidade Nexora, painel do modelo ativo, botão **Conversar** e ações **Importar**, **Modelos** e **Baixar** na mesma linha, com espaçamento e ícones.
 - **Chat agora em tela própria:** cabeçalho exibe o arquivo GGUF atualmente carregado. Histórico local da Nexora e botão de limpar com confirmação.
 - Barra de composição redesenhada com botão de envio por ícone e controle **Direto/Pensar** à esquerda da mensagem. Em modelos Qwen3, aplica `/no_think` ou `/think` à mensagem enviada ao motor. Para outros modelos, o controle é indisponível; não é um recurso universal do GGUF.
@@ -17,7 +17,7 @@ Nexora é um aplicativo Android **nativo Kotlin** de IA local, desenvolvido a pa
 - Catálogo com cartões mais espaçados, botões Baixar/Página separados, painel de transferência com barra preenchida e bytes recebidos vs total (`30,0 de 300,0 MB`, se o servidor informar tamanho), pausa/erro e cancelamento. Com total desconhecido, apresenta bytes reais + tamanho estimado sem calcular porcentagem fictícia.
 - Botão **Página** exige confirmar a saída em um diálogo personalizado antes de abrir `huggingface.co` no navegador.
 - DownloadManager permanece responsável pelas transferências, inclusive com a tela apagada (condicionado às políticas do Android), com confirmação GGUF e SHA-256 antes de disponibilizar.
-- Identificadores, manifesto, nomes de artifacts, documentação e Gradle sincronizados para `alpha.6`.
+- Identificadores, manifesto, nomes de artifacts, documentação e Gradle sincronizados para `alpha.7`.
 
 ## Como usar
 1. Abra Nexora > **Baixar** e escolha SmolLM2 360M, Qwen3 0.6B ou Qwen3 1.7B, ou **Importar** para selecionar um GGUF já existente.
@@ -38,8 +38,8 @@ bash scripts/bootstrap.sh
 ```
 
 O workflow GitHub Actions **Gerar APK Nexora** executa preparação, testes e compilação. Artefatos previstos:
-- `Nexora-v0.1.0-alpha.6-apk-debug`
-- `Nexora-v0.1.0-alpha.6-apk-release-assinado` (se todos os quatro Secrets estiverem configurados)
+- `Nexora-v0.1.0-alpha.7-apk-debug`
+- `Nexora-v0.1.0-alpha.7-apk-release-assinado` (se todos os quatro Secrets estiverem configurados)
 
 ## Secrets de assinatura
 - `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
@@ -56,3 +56,10 @@ O workflow GitHub Actions **Gerar APK Nexora** executa preparação, testes e co
 
 ## Licença
 - Motor nativo baseado no projeto [`llama.cpp` (MIT)](https://github.com/ggml-org/llama.cpp) em commit fixado pelo bootstrap. Pesos/modelos possuem licenças separadas.
+
+## Novo na alpha.7: medidor de desempenho
+No chat, o cartão **DESEMPENHO LOCAL** mostra o ritmo de fragmentos emitidos pela engine (aproximação de tokens/s), tempo até o primeiro fragmento, PSS do processo Nexora (não equivale ao total exclusivo do modelo), RAM livre reportada pelo Android, temperatura da bateria (não CPU) e pressão térmica do Android. Amostragens de memória/bateria ocorrem a cada 2 s **somente enquanto o chat está em primeiro plano**. O contador inclui fragmentos de raciocínio que não aparecem no chat. Um fragmento não-vazio não corresponde necessariamente a exatamente um token e não substitui benchmark nativo de llama.cpp. Para comparar modelos, use a mesma pergunta, modo de raciocínio e condições térmicas; avalie também tempo até início e uso de memória. Não há medição de corrente/energia implementada.
+
+Novo catálogo: **Qwen3 4B Q4_K_M** (2,5 GB; SHA-256 validado conforme página oficial do arquivo). AVISO: o arquivo não é o total de RAM exigida! O motor e o KV cache exigem memória adicional; não é garantido que carregue no dispositivo do usuário. Se faltar RAM, não confundir com falha de integridade. Um modelo mais pesado pode não resultar em respostas mais rápidas ou corretas em todos os usos.
+
+O gráfico horizontal é uma escala visual de 0 a 30 fragmentos/s, saturando acima desse valor; rótulos de fluidez são faixas indicativas da geração, não prova de precisão do conteúdo.

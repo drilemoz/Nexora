@@ -1,6 +1,11 @@
+## 0.1.0-alpha.7
+- Medidor local no chat: régua horizontal indicativa de fluidez, velocidade estimada de fragmentos/s, latência para primeira saída, RAM disponível, PSS do processo, temperatura da bateria e pressão térmica. Atualização de leitura a cada 2 segundos apenas com tela visível.
+- Catálogo: Qwen3 4B Q4_K_M oficial (2,5 GB), SHA-256 e confirmação de risco de falta de RAM.
+- Sem alterações no package, Secrets e certificado; sem novos serviços em segundo plano.
+
 # CHANGELOG
 
-## 0.1.0-alpha.6 • Nexora
+## 0.1.0-alpha.7 • Nexora
 - Rebranding completo: nome, applicationId, namespace, ícone adaptativo e identidade visual.
 - Tela inicial dedicada aos modelos e botão Conversar; chat independente com nome do GGUF no topo.
 - Tela própria para seleção dos quatro temas, sem pop-up.

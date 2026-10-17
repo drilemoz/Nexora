@@ -182,7 +182,8 @@ class ModelCatalogActivity : AppCompatActivity() {
         if (downloads.isActive()) { toast("Há uma transferência em andamento"); return }
         MaterialAlertDialogBuilder(this)
             .setTitle("Baixar ${model.label}?")
-            .setMessage("Arquivo de aproximadamente ${model.sizeLabel}. A transferência usa internet e pode consumir dados móveis. A conversa funciona offline depois de carregar o GGUF.")
+            .setMessage("Arquivo de aproximadamente ${model.sizeLabel}. A transferência usa internet e pode consumir dados móveis. A conversa funciona offline depois de carregar o GGUF." +
+                if (model.id == "qwen3-4b") "\n\nATENÇÃO: modelo experimental de 4B. Os 2,5 GB são somente o arquivo; executar exige RAM adicional para contexto e motor. Pode falhar ou fechar em aparelhos com pouca RAM." else "")
             .setPositiveButton("Baixar") { _, _ ->
                 try { downloads.enqueue(model); renderCards(); updateUi() }
                 catch (e: Exception) { toast(e.localizedMessage ?: "Não foi possível iniciar") }
