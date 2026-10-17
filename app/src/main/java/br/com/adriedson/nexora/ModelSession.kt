@@ -31,6 +31,7 @@ sealed class ModelLoadState {
 object ModelSession {
     @Volatile private var path: String? = null
     @Volatile private var activeChat: String? = null
+    @Volatile private var contextDirty = false
     private val sessionMutex = Mutex()
     private val restoring = AtomicBoolean(false)
     private val scheduled = AtomicBoolean(false)
@@ -41,6 +42,10 @@ object ModelSession {
 
     fun currentPath(): String? = path
     fun activeConversationId(): String? = activeChat
+    /** Após cancelamento, erro ou limpeza, nenhuma geração pode reutilizar o KV antigo. */
+    fun markContextDirty(chatId: String) {
+        if (activeChat == chatId) contextDirty = true
+    }
     fun currentName(): String? = path?.takeIf { File(it).isFile }?.let { File(it).name }
     fun currentDisplayName(context: Context): String? = path?.takeIf { File(it).isFile }
         ?.let { ModelLabels.display(context, File(it)) }
@@ -137,6 +142,7 @@ object ModelSession {
                 }
                 path = null
                 activeChat = null
+                contextDirty = false
                 if (cancelLoad.get()) throw CancellationException("Carregamento cancelado")
                 val inference = ModelInferencePreferences.get(context, model)
                 e.configureModel(inference.contextSize,inference.threads,inference.temperature,
@@ -148,6 +154,7 @@ object ModelSession {
                 }
                 path = model.absolutePath
                 activeChat = null
+                contextDirty = false
                 val elapsed = SystemClock.elapsedRealtime() - startMs
                 ModelStartup.rememberSuccessful(context, model, elapsed)
                 DiagnosticEvents.record(context, "model.load.ready", "name=${model.name.take(95)} elapsedMs=$elapsed")
@@ -155,6 +162,7 @@ object ModelSession {
             } catch (e: CancellationException) {
                 path = null
                 activeChat = null
+                contextDirty = false
                 mutableLoadState.value = ModelLoadState.Idle
                 DiagnosticEvents.record(context, "model.load.cancel", "name=${model.name.take(95)}")
                 throw e
@@ -168,6 +176,7 @@ object ModelSession {
                 DiagnosticEvents.record(context, "model.load.error", "name=${model.name.take(95)} type=${e.javaClass.simpleName}", "ERROR")
                 path = null
                 activeChat = null
+                contextDirty = false
                 mutableLoadState.value = ModelLoadState.Problem(model.name,
                     "Falha ao carregar: ${e.localizedMessage?.take(140) ?: e.javaClass.simpleName}")
                 throw e
@@ -175,19 +184,14 @@ object ModelSession {
         }
     }
 
-    suspend fun resetConversation(context:Context,chatId:String):Boolean = withContext(Dispatchers.IO) {
+    suspend fun resetConversation(context: Context, chatId: String): Boolean = withContext(Dispatchers.IO) {
         sessionMutex.withLock {
-            val current=currentPath() ?: return@withLock false
-            val file=File(current)
-            if(!file.isFile || !isReady(context)) return@withLock false
-            val e=engine(context)
-            e.cleanUp()
-            path=null;activeChat=null
-            val settings=ModelInferencePreferences.get(context,file)
-            e.configureModel(settings.contextSize,settings.threads,settings.temperature,settings.topP,settings.topK,settings.minP,settings.repeatPenalty)
-            e.loadModel(current)
-            path=current;activeChat=chatId
-            DiagnosticEvents.record(context,"model.context.reset","reason=regenerate")
+            if (!isReady(context)) return@withLock false
+            // Limpa KV, histórico nativo e sampler; preserva pesos alocados do GGUF.
+            engine(context).resetConversation()
+            activeChat = chatId
+            contextDirty = false
+            DiagnosticEvents.record(context, "model.context.reset", "reason=regenerate method=kv")
             true
         }
     }
@@ -201,37 +205,27 @@ object ModelSession {
             }
             path = null
             activeChat = null
+            contextDirty = false
             DiagnosticEvents.record(context, "model.unload")
             mutableLoadState.value = ModelLoadState.Idle
         }
     }
 
-    /** Evita reaproveitar tokens de outra conversa quando o modelo permanece no processo. */
+    /** Chat separado: zera histórico, KV e sampler mantendo pesos GGUF carregados. */
     suspend fun prepareChat(context: Context, chatId: String): Boolean = withContext(Dispatchers.IO) {
         sessionMutex.withLock {
             if (!isReady(context)) return@withLock false
-            if (activeChat == chatId) return@withLock true
-            DiagnosticEvents.record(context, "model.context.switch", "reset=${activeChat != null}")
-            if (activeChat == null) { activeChat = chatId; return@withLock true }
-            val current = requireNotNull(currentPath())
-            val e = engine(context)
-            if (e.state.value is InferenceEngine.State.ModelReady) {
-                e.cleanUp()
-                path = null
-                activeChat = null
-                try {
-                    val inference = ModelInferencePreferences.get(context, File(current))
-                    e.configureModel(inference.contextSize,inference.threads,inference.temperature,
-                        inference.topP,inference.topK,inference.minP,inference.repeatPenalty)
-                    e.loadModel(current)
-                    path = current
-                    activeChat = chatId
-                    true
-                } catch (err: Exception) {
-                    mutableLoadState.value = ModelLoadState.Problem(File(current).name, "Falha ao trocar conversa: ${err.localizedMessage}")
-                    throw err
-                }
-            } else false
+            if (activeChat == chatId && !contextDirty) return@withLock true
+            val previous = activeChat
+            // Mesmo se activeChat == null, um cancelamento pode ter deixado tokens parciais.
+            if (previous != null || contextDirty) {
+                engine(context).resetConversation()
+                DiagnosticEvents.record(context, "model.context.reset",
+                    "reason=${if (contextDirty) "interrupted" else "switch"} method=kv")
+            }
+            activeChat = chatId
+            contextDirty = false
+            true
         }
     }
 }

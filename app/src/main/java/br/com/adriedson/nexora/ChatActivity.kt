@@ -156,6 +156,11 @@ class ChatActivity : AppCompatActivity() {
             if (!busy) NexoraDialogs.confirmDelete(this, "Apagar mensagens?",
                 "As mensagens desta conversa serão excluídas. Os modelos continuarão instalados.") {
                 messages.clear(); adapter.notifyDataSetChanged(); save()
+                ModelSession.markContextDirty(chatId)
+                contextReady = false
+                firstPrompt = true
+                pdfDirty = true
+                prepareChatContext()
             }
         }
         thinking = prefs.getBoolean("thinking_enabled", false)
@@ -226,7 +231,7 @@ class ChatActivity : AppCompatActivity() {
                 setOnClickListener {
                     MaterialAlertDialogBuilder(this@ChatActivity).setTitle(pdf.name)
                         .setMessage("Texto extraído localmente: ${pdf.text.length} caracteres. ${if(pdf.truncated) "Extração parcial." else ""} O modelo recebe somente trechos selecionados (até 1600 caracteres por anexo). Isso não equivale à leitura integral do PDF.")
-                        .setPositiveButton("Remover anexo") { _,_ ->store.deletePdf(pdf.id,chatId);renderPdfs()}
+                        .setPositiveButton("Remover anexo") { _,_ ->store.deletePdf(pdf.id,chatId);pdfDirty=true;renderPdfs()}
                         .setNegativeButton("Fechar",null).show()
                 }
             }
@@ -316,9 +321,10 @@ class ChatActivity : AppCompatActivity() {
                     .collect { token ->
                         val nowNs = SystemClock.elapsedRealtimeNanos()
                         meter.onFragment(token, nowNs)
-                        val visible = filter.append(token)
-                        // Atualizar a UI no maximo ~8 vezes/s, sem perder fragmentos.
+                        filter.accept(token)
+                        // Materializar texto apenas nas atualizações (~8/s), não por token.
                         if (lastUiUpdateNs == 0L || nowNs - lastUiUpdateNs >= 125_000_000L) {
+                            val visible = filter.visibleText()
                             response.text = visible
                             if (visible.isNotEmpty()) status.text = "Resposta local em andamento..."
                             displayMeter()
@@ -336,6 +342,12 @@ class ChatActivity : AppCompatActivity() {
                 displayMeter()
                 val outcome = GenerationOutcome.fromNative(engineStats?.reason)
                 status.text = outcome.status(generationLimit)
+                if (outcome != GenerationOutcome.EOG) {
+                    ModelSession.markContextDirty(chatId)
+                    contextReady = false
+                    firstPrompt = true
+                    pdfDirty = true
+                }
                 val reading = meter.reading(SystemClock.elapsedRealtimeNanos())
                 DiagnosticEvents.record(this@ChatActivity, "inference.end",
                     "reason=${outcome.diagnostic} tokens=${engineStats?.generatedTokens ?: -1} " +
@@ -347,10 +359,18 @@ class ChatActivity : AppCompatActivity() {
             } catch (_: CancellationException) {
                 response.text = filter.finish().ifBlank { "(Geração interrompida.)" }
                 status.text = "Geração interrompida."
+                ModelSession.markContextDirty(chatId)
+                contextReady = false
+                firstPrompt = true
+                pdfDirty = true
                 DiagnosticEvents.record(this@ChatActivity, "inference.cancel", "reason=$generationCancelReason")
             } catch (e: Exception) {
                 response.text = filter.finish().ifBlank { "(Não foi possível gerar a resposta.)" }
                 status.text = "Erro de inferência: ${e.localizedMessage?.take(120)}"
+                ModelSession.markContextDirty(chatId)
+                contextReady = false
+                firstPrompt = true
+                pdfDirty = true
                 DiagnosticEvents.record(this@ChatActivity, "inference.error", "type=${e.javaClass.simpleName}", "ERROR")
             } finally {
                 withContext(NonCancellable + Dispatchers.Main) {
@@ -360,6 +380,9 @@ class ChatActivity : AppCompatActivity() {
                     displayMeter()
                     refresh()
                     save()
+                    // Restaurar contexto em primeiro plano antes de permitir outra pergunta.
+                    if (!contextReady && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED) &&
+                        ModelSession.isReady(applicationContext)) prepareChatContext()
                 }
             }
         }

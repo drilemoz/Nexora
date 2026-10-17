@@ -189,9 +189,11 @@ class ModelsActivity : AppCompatActivity() {
                 }
                 row.addView(icon,android.widget.LinearLayout.LayoutParams(dp(42),dp(42)))
                 val label=TextView(this).apply {
-                    text="${ModelLabels.display(this@ModelsActivity,file)}${if(active) "  •  ATIVO" else ""}\n${StorageSummary.size(file.length())} • ${quantization(file)}\n${file.name}"
-                    setTextColor(ThemePreferences.labelColor(this@ModelsActivity));textSize=12f
-                    maxLines=4;setPadding(dp(4),0,0,0)
+                    text="${ModelLabels.display(this@ModelsActivity,file)}${if(active) "  •  ATIVO" else ""}\n${quantization(file)} • ${StorageSummary.size(file.length())}"
+                    setTextColor(ThemePreferences.labelColor(this@ModelsActivity));textSize=13f
+                    maxLines=2;ellipsize=android.text.TextUtils.TruncateAt.END
+                    setPadding(dp(4),0,0,0)
+                    contentDescription="${ModelLabels.display(this@ModelsActivity,file)}. ${quantization(file)}. ${StorageSummary.size(file.length())}. Arquivo: ${file.name}${if(active) ". Modelo ativo" else ""}"
                 }
                 row.addView(label,android.widget.LinearLayout.LayoutParams(0,-2,1f))
                 val action=android.widget.ImageButton(this).apply {
@@ -224,28 +226,77 @@ class ModelsActivity : AppCompatActivity() {
     private fun quantization(file:File):String =
         Regex("Q[0-9]+(?:_[A-Z0-9]+)*",RegexOption.IGNORE_CASE).find(file.name)?.value ?: "Quantização não identificada"
 
-    private fun showModelActions(file:File) {
-        val active=ModelSession.currentPath()==file.absolutePath
-        val labels=arrayOf(if(active)"Descarregar modelo" else "Carregar modelo",
-            "⚙ Ajustes de inferência","Detalhes técnicos","Renomear","Excluir arquivo")
-        MaterialAlertDialogBuilder(this).setTitle(ModelLabels.display(this,file))
-            .setItems(labels) { _,index -> when(index) {
-                0 -> if(active) unload() else load(file)
-                1 -> ModelSettingsDialog.show(this,file)
-                2 -> showModelDetails(file)
-                3 -> renameLabel(file)
-                4 -> delete(file)
-            }}.setNegativeButton("Fechar",null).show()
+    /** Ícones vetoriais e rótulos consistentes para TODAS as ações dos modelos. */
+    private fun showModelActions(file: File) {
+        val active = ModelSession.currentPath() == file.absolutePath
+        val actions = listOf(
+            Triple(if (active) "Descarregar modelo" else "Carregar modelo",
+                if (active) R.drawable.ic_model_unload else R.drawable.ic_model_load, 0),
+            Triple("Ajustes de inferência", R.drawable.ic_settings, 1),
+            Triple("Detalhes técnicos", R.drawable.ic_info, 2),
+            Triple("Renomear", R.drawable.ic_edit, 3),
+            Triple("Excluir arquivo", R.drawable.ic_delete, 4)
+        )
+        val panel = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(12), dp(4), dp(12), dp(4))
+        }
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(ModelLabels.display(this, file))
+            .setView(panel)
+            .setNegativeButton("Fechar", null)
+            .create()
+        actions.forEach { (label, iconRes, index) ->
+            val actionRow = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(dp(12), 0, dp(12), 0)
+                isClickable = true
+                isFocusable = true
+                selectableBackground()
+                contentDescription = label
+            }
+            actionRow.addView(android.widget.ImageView(this).apply {
+                setImageResource(iconRes)
+                setColorFilter(if (index == 4) ThemePreferences.mutedColor(this@ModelsActivity)
+                    else ThemePreferences.accentColor(this@ModelsActivity))
+                contentDescription = null
+            }, android.widget.LinearLayout.LayoutParams(dp(20), dp(20)))
+            actionRow.addView(TextView(this).apply {
+                text = label
+                textSize = 15f
+                setTextColor(ThemePreferences.labelColor(this@ModelsActivity))
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }, android.widget.LinearLayout.LayoutParams(0, -1, 1f).apply {
+                marginStart = dp(16)
+            })
+            actionRow.setOnClickListener {
+                dialog.dismiss()
+                when (index) {
+                    0 -> if (active) unload() else load(file)
+                    1 -> ModelSettingsDialog.show(this, file)
+                    2 -> showModelDetails(file)
+                    3 -> renameLabel(file)
+                    4 -> delete(file)
+                }
+            }
+            panel.addView(actionRow, android.widget.LinearLayout.LayoutParams(-1, dp(52)))
+        }
+        dialog.show()
     }
 
     private fun delete(file: File) {
+        if (busy || ModelSession.isLoading()) {
+            toast("Aguarde o carregamento ou importação terminar")
+            return
+        }
         if (file.absolutePath == ModelSession.currentPath()) {
             toast("Descarregue o modelo antes de excluir")
             return
         }
         NexoraDialogs.confirmDelete(this, "Excluir ${file.name}?",
             "Esta cópia privada será apagada. O arquivo original selecionado na pasta Downloads não será afetado.") {
-            // Limpar preferências ANTES da remoção; chave inclui tamanho do GGUF.
+            // Limpar preferências somente após exclusão bem-sucedida.
             val removed = file.delete()
             if (removed) {
                 ModelStartup.forgetIfMatches(this, file)
@@ -355,6 +406,7 @@ class ModelsActivity : AppCompatActivity() {
         } finally { pending.delete() }
     }
 
+    /** Cartões compactos: nome amigável + informações essenciais, sem cortar os botões. */
     private fun renderInstalled() {
         modelList.removeAllViews()
         val all = models()
@@ -362,46 +414,74 @@ class ModelsActivity : AppCompatActivity() {
             modelList.addView(TextView(this).apply {
                 text = "Nenhum GGUF instalado. Importe ou baixe um modelo."
                 setTextColor(ThemePreferences.mutedColor(this@ModelsActivity))
-                setPadding(12, 12, 12, 12)
+                setPadding(dp(10), dp(14), dp(10), dp(14))
             })
         }
         all.forEach { file ->
+            val active = ModelSession.currentPath() == file.absolutePath
             val row = android.widget.LinearLayout(this).apply {
                 orientation = android.widget.LinearLayout.HORIZONTAL
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                setPadding(10, 16, 4, 16)
+                setPadding(dp(12), dp(10), dp(4), dp(10))
             }
-            val label = TextView(this).apply {
-                text = "${if (ModelSession.currentPath() == file.absolutePath) "●  " else "◇  "}${ModelLabels.display(this@ModelsActivity, file)}\n${quantization(file)} • ${StorageSummary.size(file.length())}\n${file.name}"
+            val labelColumn = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(0, 0, dp(5), 0)
+                isClickable = true
+                selectableBackground()
+                contentDescription = "Detalhes de ${ModelLabels.display(this@ModelsActivity, file)}. " +
+                    "${quantization(file)}, ${StorageSummary.size(file.length())}. " +
+                    "Nome original ${file.name}. ${if (active) "Ativo" else "Instalado"}"
+                setOnClickListener { showModelDetails(file) }
+            }
+            labelColumn.addView(TextView(this).apply {
+                text = ModelLabels.display(this@ModelsActivity, file)
                 setTextColor(ThemePreferences.labelColor(this@ModelsActivity))
-                textSize = 13f
-                maxLines = 3
-            }
-            row.addView(label, android.widget.LinearLayout.LayoutParams(0, -2, 1f))
-            label.setOnClickListener { showModelDetails(file) }
-            row.setOnClickListener { showModelDetails(file) }
-            label.contentDescription = "Detalhes do modelo ${file.name}"
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                textSize = 14f
+                setSingleLine(true)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }, android.widget.LinearLayout.LayoutParams(-1, -2))
+            labelColumn.addView(TextView(this).apply {
+                text = "${quantization(file)} • ${StorageSummary.size(file.length())}"
+                setTextColor(ThemePreferences.mutedColor(this@ModelsActivity))
+                textSize = 11f
+                setSingleLine(true)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }, android.widget.LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(3) })
+            row.addView(labelColumn, android.widget.LinearLayout.LayoutParams(0, dp(50), 1f))
             row.addView(MaterialButton(this).apply {
-                text = if (ModelSession.currentPath() == file.absolutePath) "Ativo" else "Carregar"
-                textSize = 11f; isAllCaps = false
-                isEnabled = !busy && ModelSession.currentPath() != file.absolutePath
+                text = if (active) "Ativo" else "Carregar"
+                textSize = 11f
+                isAllCaps = false
+                minWidth = 0
+                minimumWidth = 0
+                insetTop = 0
+                insetBottom = 0
+                isEnabled = !busy && !active
+                setPadding(0, 0, 0, 0)
                 setOnClickListener { load(file) }
-            })
+            }, android.widget.LinearLayout.LayoutParams(dp(86), dp(44)))
             row.addView(android.widget.ImageButton(this).apply {
                 setImageResource(R.drawable.ic_more)
-                background = null
+                scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
+                setPadding(dp(13), dp(13), dp(13), dp(13))
                 setColorFilter(ThemePreferences.accentColor(this@ModelsActivity))
-                contentDescription = "Opções de ${file.name}"
+                selectableBackground(borderless = true)
+                contentDescription = "Ações de ${ModelLabels.display(this@ModelsActivity, file)}"
                 setOnClickListener { showModelActions(file) }
-            }, android.widget.LinearLayout.LayoutParams(dp(44),dp(48)))
+            }, android.widget.LinearLayout.LayoutParams(dp(44), dp(48)))
             row.addView(android.widget.ImageButton(this).apply {
                 setImageResource(R.drawable.ic_delete)
-                background = null
+                scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
                 setColorFilter(ThemePreferences.mutedColor(this@ModelsActivity))
-                contentDescription = "Excluir ${file.name}"
-                setPadding(16,16,16,16)
+                // Ícone pequeno, mas área de toque preservada (48 dp).
+                setPadding(dp(15), dp(15), dp(15), dp(15))
+                selectableBackground(borderless = true)
+                contentDescription = "Excluir ${ModelLabels.display(this@ModelsActivity, file)}"
                 setOnClickListener { delete(file) }
-            }, android.widget.LinearLayout.LayoutParams(dp(52), dp(52)))
+            }, android.widget.LinearLayout.LayoutParams(dp(48), dp(48)))
             val card = com.google.android.material.card.MaterialCardView(this).apply {
                 radius = dp(18).toFloat()
                 setCardBackgroundColor(ThemePreferences.panelColor(this@ModelsActivity))
@@ -415,6 +495,16 @@ class ModelsActivity : AppCompatActivity() {
             })
         }
     }
+
+    private fun View.selectableBackground(borderless: Boolean = false) {
+        val attr = if (borderless) android.R.attr.selectableItemBackgroundBorderless
+                   else android.R.attr.selectableItemBackground
+        val value = android.util.TypedValue()
+        if (this@ModelsActivity.theme.resolveAttribute(attr, value, true) && value.resourceId != 0) {
+            setBackgroundResource(value.resourceId)
+        }
+    }
+
     private fun showModelDetails(file: File) {
         val location = if (file.parentFile?.canonicalPath == modelsDir().canonicalPath)
             "Biblioteca privada do Nexora" else "Biblioteca de downloads do aplicativo"

@@ -40,6 +40,16 @@ class ThinkingTextFilterTest {
             }
         }
     }
+    @Test fun batchedUiRenderingMatchesFinishedResponse() {
+        val f = ThinkingTextFilter()
+        f.accept("<thi")
+        assertEquals("", f.visibleText())
+        f.accept("nk>segredo</think>Resposta")
+        assertEquals("Resposta", f.visibleText())
+        f.accept(" final")
+        assertEquals("Resposta final", f.finish())
+    }
+
     @Test fun unusualTextOutsideBlockIsPreserved() {
         assertEquals("antesdepois", ThinkingTextFilter.visibleText("antes<think>oculto</think>depois"))
     }

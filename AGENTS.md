@@ -1,6 +1,6 @@
 # Nexora • Regras de desenvolvimento
 - App Android nativo Kotlin, GGUF offline em CPU via llama.cpp. Internet somente para download explícito de modelos.
-- Versão atual: `0.1.0-alpha.16` (`versionCode 16`). Próxima: `0.1.0-alpha.17` (`versionCode 17`).
+- Versão atual: `0.1.0-alpha.18` (`versionCode 18`). Próxima: `0.1.0-alpha.19` (`versionCode 19`).
 - Em cada alteração, incrementar sequencialmente `versionName` e `versionCode`; sincronizar README, CHANGELOG, docs/VERSIONING, docs/RELEASE_NOTES, workflow e identidade.
 - Identidade definitiva desde alpha.6: `br.com.adriedson.nexora`. Não restaurar o package antigo.
 - As quatro credenciais de assinatura permanecem opcionais via GitHub Secrets; nunca distribuir keystore nem senhas no repositório.
@@ -22,3 +22,7 @@
 - Alpha.15: estado térmico do Android sempre rotulado como estado do sistema com código bruto; bateria separada, headroom somente quando suportado; painel compacto expande sob demanda. Nunca inventar temperatura da CPU nem progresso de resposta.
 
 - Alpha.16: perfis por modelo aplicados somente no carregamento, via JNI pinned; não fingir aplicar opções sem recarga. Ao regenerar última resposta, o contexto é zerado. A barra de RAM é disponibilidade reportada pelo Android. JSON exportado a Downloads/Nexora via MediaStore sem compartilhamento automático. A renderização Markdown é deliberadamente limitada (negrito, itálico, títulos, listas e código), sem HTML ativo.
+
+- Alpha.17: cartões de modelos compactos exibem apenas apelido, quantização e tamanho; filename completo permanece nos detalhes. Lixeira visual reduzida com área de toque 48 dp e confirmação; menu personalizado usa um ícone para cada uma das cinco ações.
+
+- Alpha.18: reset KV + sampler sem descartar os pesos GGUF ao alternar/regenerar conversa; após cancelamento, limite ou falha, reconstruir contexto do histórico antes de permitir novo envio. Patches falham com revisão diferente e CI valida âncoras. Não prometer funcionamento sem validar a build JNI.

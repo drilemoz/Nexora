@@ -1,3 +1,11 @@
+## 0.1.0-alpha.18 (versionCode 18) • 17/10/2026
+- Patches auditáveis no llama.cpp fixado: remove o vazamento do texto formatado e dos tokens de saída no Logcat; mantém diagnóstico por contagens sem revelar conteúdo.
+- Corrige posições de batches após deslocamento do KV, sem recontar tokens do prompt. Impõe limite de saída pelo contador nativo, que não recua quando o contexto desliza.
+- JNI agora limpa KV, histórico e sampler de cada conversa sem recarregar pesos GGUF. Troca de chat e regeneração usam reset leve; cancelamentos, interrupções anormais e limpeza do histórico invalidam o contexto para o próximo envio.
+- Protege liberação parcial do motor em falhas de load/prepare; reduz materialização de strings completas durante streaming para as atualizações de UI.
+- CI verifica invariantes dos patches após bootstrap; mesma revisão upstream, package, banco SQLite, modelos e assinatura.
+- Build Android/JNI, testes de inferência no telefone e medições de performance continuam pendentes.
+
 # Changelog Nexora
 
 ## 0.1.0-alpha.16 (versionCode 16)
@@ -80,6 +88,13 @@
 - Sem alterações no package, Secrets e certificado; sem novos serviços em segundo plano.
 
 # CHANGELOG
+
+## 0.1.0-alpha.17 (versionCode 17) • 17/10/2026
+- Redesenhados os cartões de modelos instalados com nome amigável em destaque e linha secundária de quantização/tamanho. O filename GGUF completo fica nos detalhes técnicos e nas descrições de acessibilidade, não espremido entre botões.
+- Biblioteca de modelos apresenta cartões de duas linhas, respeitando busca, ordenação e apelidos existentes.
+- Botão de excluir com ícone visual menor, mantendo alvo de toque de 48 dp e diálogo de confirmação; não apaga um modelo ativo.
+- Modal de ações do modelo com ícones vetoriais consistentes em todas as cinco opções e área de toque de 52 dp, adaptado aos temas.
+- Mantidos dados, modelos, perfil de inferência, diagnóstico, conversas, identificador Android e assinatura. Build e validação visual completos pendentes.
 
 ## 0.1.0-alpha.13 • 17/10/2026
 - Contadores nativos de tokens e tempos por geração; identifica EOG/limite/erro no JNI com patch auditável sobre revisão fixa do llama.cpp.

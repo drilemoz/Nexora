@@ -31,6 +31,8 @@ jobs:
           sdkmanager --install 'platforms;android-36' 'ndk;29.0.13113456' 'cmake;3.31.6'
       - name: Preparar engine nativa fixa
         run: bash scripts/bootstrap.sh
+      - name: Verificar patches nativos alpha.18
+        run: python3 scripts/verify_native_alpha18.py
       - name: Testes de unidade
         run: ./gradlew :app:testDebugUnitTest --stacktrace
       # Assinar somente builds confiáveis (push no ramo principal ou execução manual).
@@ -81,7 +83,7 @@ jobs:
         if: success() && steps.signing.outputs.enabled != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Nexora-v0.1.0-alpha.16-apk-debug
+          name: Nexora-v0.1.0-alpha.18-apk-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -89,7 +91,7 @@ jobs:
         if: success() && steps.signing.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Nexora-v0.1.0-alpha.16-apk-release-assinado
+          name: Nexora-v0.1.0-alpha.18-apk-release-assinado
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14

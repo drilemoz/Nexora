@@ -7,9 +7,18 @@ class ThinkingTextFilter {
     private val prefix = StringBuilder()
     private var inside = false
 
-    fun append(token: String): String {
+    /** Recebe fragmentos sem reconstruir toda a saída a cada token. */
+    fun accept(token: String) {
         for (char in token) feed(char)
-        return shown.toString().trimStart()
+    }
+
+    /** Chamar apenas quando a interface realmente precisar renderizar. */
+    fun visibleText(): String = shown.toString().trimStart()
+
+    // Compatibilidade com consumidores/testes que utilizavam append diretamente.
+    fun append(token: String): String {
+        accept(token)
+        return visibleText()
     }
 
     fun finish(): String {

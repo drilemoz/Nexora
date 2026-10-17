@@ -1,6 +1,41 @@
-# Validação 0.1.0-alpha.16 (código-fonte)
+# Validação 0.1.0-alpha.18 (código-fonte)
 
-- Sintaxe Kotlin: validar 53 fontes; XML: validar 41 recursos; scripts Python via `py_compile` e shell via `bash -n`.
+## Resultado local de 17/10/2026
+
+- [OK] ZIP alpha.17 usado como base, sem alteração do package `br.com.adriedson.nexora` nem do banco SQLite.
+- [OK] Versão `0.1.0-alpha.18`, versionCode 18, workflows e documentação sincronizados.
+- [OK] Parser Kotlin PSI: **53 fontes de código e teste, zero erros sintáticos**.
+- [OK] XML: **46 recursos válidos**; YAML do GitHub Actions analisado; Python `py_compile`; `bash -n`.
+- [OK] Filtro ThinkingTextFilter/GenerationOutcome compilados com kotlinc e **179 cenários** de fragmentação e limitação de saída verificados em runner JVM independente.
+- [OK] `patch_llama_safety.py` aplicado a fixture com as **16 âncoras previstas**, seguida de verificação de 10 invariantes por `verify_native_alpha18.py`. É apenas teste das transformações, **não é compilação real do upstream**.
+- [PENDENTE] Bootstrap completo com revisão fixada `ea0c4c2c85fb183ec0fbd30a1af4e4275a18a064`, JNI/NDK, Gradle, JUnit oficial e APK: ambiente local sem acesso de rede ao GitHub, Android SDK ou dependências Gradle.
+
+## Matriz de testes necessária no GitHub Actions e no telefone
+
+1. Executar `bash scripts/bootstrap.sh`; falha de âncora deve interromper build. A etapa `verify_native_alpha18.py` valida regras de privacidade, deslocamento KV, tokens e cleanup antes dos testes Gradle.
+2. Compilar `:app:testDebugUnitTest` e `:app:assembleDebug` (ou Release com os quatro Secrets); observar erros C++/JNI e da API `InferenceEngine.resetConversation()`.
+3. Com GGUF pequeno, gerar exatamente 32 e 128 tokens de saída máxima, inclusive após repetidas trocas do contexto. Limite nativo jamais deve ultrapassar o solicitado. Comparar reason EOG vs LIMIT vs DECODE_ERROR e texto visível, sem assumir EOG ocorrerá.
+4. Com 2.048 tokens de janela, enviar prompts longos em batches; confirmar ausência de posições KV inválidas, duplicação de tokens ou erro de decode ao deslizar o contexto.
+5. Em duas conversas alternadas, validar contexto isolado sem novo carregamento de pesos; regenerar resposta, limpar conversa e interromper geração manualmente. Pergunta posterior deve recuperar histórico resumido sem reaproveitar KV anterior.
+6. Bloquear a tela durante inferência: continuar cancelando no onStop (comportamento deliberado); reabrir e verificar envio posterior. Validar fluxo equivalente com um PDF parcialmente extraído e sem OCR.
+7. Forçar erro durante carregamento (GGUF inválido ou memória insuficiente) e tentar carregar modelo menor depois. Monitorar PSS, estado térmico e desaparecimento de recursos nativos.
+8. Verificar Logcat (Debug e Release) com frase sentinela em prompt, PDF e resposta; **nenhum texto de conversa deve aparecer**, inclusive por mensagens formatadas ou tokens de saída. O nome/caminho do GGUF ainda pode aparecer em logs de infraestrutura e merece análise separada.
+9. Comparar latência de troca de chat e regeneração com alpha.17 no mesmo aparelho, modelo, contexto e estado térmico. Sem afirmar ganho de desempenho até medir.
+
+## Limitações e riscos
+
+- Não houve compilação de `llama.cpp` nem inferência real na máquina que produziu o ZIP. A fixture demonstra aplicação dos patches apenas; se o pin ou estrutura do motor diferirem, o bootstrap deve falhar antes de gerar APK.
+- Conversas antigas continuam salvas. Uma reconstrução de histórico é resumida (últimas quatro mensagens, limite de caracteres) e não recompõe completamente a sessão anterior.
+- Cancelamentos não ativam inferência em segundo plano; a sessão deverá ser recomposta quando a tela estiver ativa.
+- Não houve benchmark de CPU, energia, PSS ou RAM de um telefone; ganhos de consumo e tempo de resposta são hipóteses de implementação.
+
+---
+
+# Validação 0.1.0-alpha.17 (código-fonte)
+
+Alterações alpha.17: cartões compactos de modelos instalados e da biblioteca, ações com ícones, exclusão visual reduzida com confirmação preservada e bloqueio durante carregamento. Verificações locais realizadas: 53 arquivos Kotlin com PSI (0 erro sintático); 46 XML válidos; referências aos seis ícones usadas no menu; testes de invariantes de rotulagem e exclusão; YAML do workflow, Python e bash válidos; versionCode 17 e metadados sincronizados. Compilação Android, interação real e visual no dispositivo pendentes.
+
+- Sintaxe Kotlin: 53 fontes aprovadas por PSI; XML: 46 recursos válidos; scripts Python via `py_compile` e shell via `bash -n`.
 - Configuração do llama.cpp: executar bootstrap com revisão fixa e confirmar aplicação fail-fast de ambos os patches (métricas JNI e preferências); compilar C++/Kotlin e testar seleção de perfil.
 - Testar perfis Econ/Eq/Personalizado, troca de modelo, reload, contexto, limite de tokens, thread, temperatura e top-k/p; validar a ausência de falha JNI.
 - Testar tema claro/escuro/AMOLED e fonte grande na biblioteca, modal, cabeçalho do chat, mensagens com Markdown, toolbar e painel de RAM.

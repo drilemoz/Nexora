@@ -60,3 +60,5 @@ printf 'Dependencia llama.cpp verificada e patches conservadores aplicados: %s\n
 # Instrumentacao vinculada ao pin acima: status real de termino e contadores de tokens.
 python3 "$ROOT/scripts/patch_llama_metrics.py" "$DIR/examples/llama.android"
 python3 "$ROOT/scripts/patch_llama_preferences.py" "$DIR/examples/llama.android"
+# Alpha.18: proteção do Logcat, deslocamento KV, limite efetivo e limpeza sem recarregar GGUF.
+python3 "$ROOT/scripts/patch_llama_safety.py" "$DIR/examples/llama.android"

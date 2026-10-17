@@ -1,4 +1,17 @@
-# Nexora 0.1.0-alpha.16
+# Nexora 0.1.0-alpha.18
+
+**Correções de inferência, memória e privacidade.** Revisão do llama.cpp e parâmetros de perfis preservados.
+
+- Impede exposição de texto formatado e tokens de saída no Logcat do JNI.
+- Corrige limite de tokens emitidos e sincronização de posições quando o KV faz context shifting; falhas de decode permanecem identificadas.
+- Reinicia estado da conversa sem descarregar/recarregar o GGUF ao trocar de chat ou regenerar. Após cancelamento/erro/limite, preserva o histórico visual e recompõe contexto no próximo envio; mensagens anteriores incluídas de forma resumida, não fiel a uma sessão completa.
+- Em falhas parciais, cleanup do JNI libera ponteiros alocados com verificações para valores nulos.
+- Filtro do streaming evita copiar o texto completo a cada fragmento.
+- Ainda é uma alpha: é obrigatório validar compilação JNI/Android e fluxo de inferência/cancelamentos num aparelho; os testes de verificação do patch são estáticos.
+
+# Nexora 0.1.0-alpha.17
+
+**Ajustes de interface dos modelos:** identificação enxuta com nome amigável, quantização e tamanho, menu completo com ícones para as cinco ações e lixeira menor (sem perder área de toque ou confirmação). Filename técnico completo permanece nos detalhes. Sem alteração no motor e na assinatura.
 
 - Nova biblioteca visual GGUF com menus, busca e ordenação, sem renomear os arquivos físicos.
 - Configurações reais por modelo: perfis Econômico, Equilibrado e Personalizado; alterar parâmetros exige recarregar o GGUF, exceto limite de tokens das próximas solicitações. Contextos maiores podem aumentar RAM e causar falha de carregamento.
