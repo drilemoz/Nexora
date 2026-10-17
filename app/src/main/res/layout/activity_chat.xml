@@ -26,7 +26,7 @@
    <TextView android:id="@+id/performanceNote" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Métrica estimada a partir dos fragmentos emitidos." android:textColor="?attr/uiMuted" android:textSize="10sp"/>
   </LinearLayout>
  </com.google.android.material.card.MaterialCardView>
- <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:horizontalScrollBarEnabled="false">
+ <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
   <LinearLayout android:id="@+id/pdfAttachments" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"/>
  </HorizontalScrollView>
  <TextView android:id="@+id/stateLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="6dp" android:paddingBottom="6dp" android:text="Modelo pronto para conversar." android:textColor="?attr/uiMuted" android:textSize="12sp" android:maxLines="2"/>

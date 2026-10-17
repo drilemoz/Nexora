@@ -129,6 +129,21 @@ class ChatActivity : AppCompatActivity() {
         renderPdfs()
         refresh()
         prepareChatContext()
+        lifecycleScope.launch {
+            ModelSession.loadState.collect { loading ->
+                when (loading) {
+                    is ModelLoadState.Loading -> if(!busy) {
+                        status.text="Aguarde: carregando ${loading.name}..."
+                        refresh()
+                    }
+                    is ModelLoadState.Ready -> if(!busy && !preparingContext && !contextReady) {
+                        prepareChatContext()
+                    }
+                    is ModelLoadState.Problem -> if(!busy && !contextReady) status.text=loading.detail
+                    else -> Unit
+                }
+            }
+        }
     }
     private fun prepareChatContext() {
         if (preparingContext) return

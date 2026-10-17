@@ -119,13 +119,15 @@ class ModelsActivity : AppCompatActivity() {
         MaterialAlertDialogBuilder(this).setTitle("Excluir ${file.name}?")
             .setMessage("O arquivo privado será apagado. Esta ação não exclui o original de outra pasta.")
             .setPositiveButton("Excluir") { _, _ ->
-                toast(if (file.delete()) "Modelo removido" else "Falha ao excluir modelo")
+                val removed = file.delete()
+                if (removed) ModelStartup.forgetIfMatches(this, file)
+                toast(if (removed) "Modelo removido" else "Falha ao excluir modelo")
                 refresh()
             }.setNegativeButton("Cancelar", null).show()
     }
 
     private fun load(file: File) {
-        if (busy) return
+        if (busy || ModelSession.isLoading()) { toast("Já há um modelo sendo carregado"); return }
         busy = true
         message.text = "Carregando ${file.name} na memória..."
         refresh()
@@ -144,7 +146,7 @@ class ModelsActivity : AppCompatActivity() {
     }
 
     private fun unload() {
-        if (busy) return
+        if (busy || ModelSession.isLoading()) { toast("Aguarde o carregamento atual terminar"); return }
         busy = true
         message.text = "Descarregando modelo..."
         refresh()

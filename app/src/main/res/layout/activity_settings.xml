@@ -20,5 +20,14 @@
    <ImageView android:layout_width="25dp" android:layout_height="25dp" android:src="@drawable/ic_chevron" android:tint="?attr/uiAccent" android:contentDescription="Abrir modelos"/>
   </LinearLayout>
  </com.google.android.material.card.MaterialCardView>
+ <com.google.android.material.card.MaterialCardView android:id="@+id/autoloadCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:cardCornerRadius="20dp" app:cardElevation="0dp" app:cardBackgroundColor="?attr/uiPanel" app:strokeWidth="1dp" app:strokeColor="?attr/uiBorder">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="16dp">
+   <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Carregar ao abrir" android:textStyle="bold" android:textSize="16sp" android:textColor="?attr/uiLabel"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Último GGUF utilizado • pode demorar e consumir RAM" android:textColor="?attr/uiMuted" android:textSize="12sp"/>
+   </LinearLayout>
+   <androidx.appcompat.widget.SwitchCompat android:id="@+id/autoLoadSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:contentDescription="Carregamento automático do último modelo"/>
+  </LinearLayout>
+ </com.google.android.material.card.MaterialCardView>
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Escolha o visual em uma tela exclusiva. As preferências ficam salvas neste dispositivo." android:textSize="13sp" android:textColor="?attr/uiMuted" android:lineSpacingExtra="3dp" android:layout_marginTop="18dp"/>
 </LinearLayout>

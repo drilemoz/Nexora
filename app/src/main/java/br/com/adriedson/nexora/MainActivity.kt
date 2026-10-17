@@ -1,6 +1,11 @@
 package br.com.adriedson.nexora
 
 import android.content.Intent
+import android.os.SystemClock
+import android.widget.ProgressBar
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.collect
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -10,6 +15,8 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -27,10 +34,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var history: RecyclerView
     private lateinit var search: EditText
     private lateinit var empty: TextView
+    private lateinit var loadingCard: View
+    private lateinit var loadingTitle: TextView
+    private lateinit var loadingInfo: TextView
+    private lateinit var loadingProgress: ProgressBar
     override fun onCreate(savedInstanceState: Bundle?) {
         theme=ThemePreferences.applyBeforeCreate(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        loadingCard=findViewById(R.id.modelLoadingCard)
+        loadingTitle=findViewById(R.id.modelLoadingTitle)
+        loadingInfo=findViewById(R.id.modelLoadingInfo)
+        loadingProgress=findViewById(R.id.modelLoadingProgress)
         store=ChatStore(this)
         store.migrateLegacy()
         history=findViewById(R.id.historyList)
@@ -45,6 +60,43 @@ class MainActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) = Unit
         })
         refresh()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { ModelSession.loadState.collect { renderLoading() } }
+                launch { while (isActive) { renderLoading(); delay(700) } }
+            }
+        }
+        lifecycleScope.launch {
+            runCatching { ModelSession.restoreLastIfEnabled(applicationContext) }
+                .onFailure { renderLoading() }
+        }
+    }
+
+    private fun renderLoading() {
+        if (!::loadingCard.isInitialized) return
+        when (val state = ModelSession.loadState.value) {
+            is ModelLoadState.Loading -> {
+                loadingCard.visibility=View.VISIBLE
+                loadingTitle.text="Aguarde, carregando ${state.name}"
+                val elapsed=SystemClock.elapsedRealtime()-state.startedMs
+                val estimate=ModelLoadProgress.estimate(elapsed, state.referenceMs)
+                loadingProgress.isIndeterminate=estimate.percentage == null
+                if (estimate.percentage != null) loadingProgress.progress=estimate.percentage
+                loadingInfo.text=when {
+                    estimate.percentage != null -> "${estimate.percentage}% estimado • decorrido ${ModelLoadProgress.clock(elapsed)} • restam ~${ModelLoadProgress.clock(estimate.remainingMs ?: 0)}"
+                    estimate.exceeded -> "Decorrido ${ModelLoadProgress.clock(elapsed)} • ultrapassou o tempo anterior; aguardando conclusão"
+                    else -> "Decorrido ${ModelLoadProgress.clock(elapsed)} • primeira carga, tempo restante desconhecido"
+                }
+            }
+            is ModelLoadState.Problem -> {
+                loadingCard.visibility=View.VISIBLE
+                loadingTitle.text="Modelo: ${state.name}"
+                loadingInfo.text=state.detail
+                loadingProgress.isIndeterminate=false
+                loadingProgress.progress=0
+            }
+            else -> { loadingCard.visibility=View.GONE }
+        }
     }
     override fun onResume() {
         super.onResume()

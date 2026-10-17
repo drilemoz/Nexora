@@ -1,4 +1,4 @@
-# Verificações Nexora 0.1.0-alpha.8
+# Verificações Nexora 0.1.0-alpha.9
 
 - XML/recursos e referências cruzadas de views inspecionados; Kotlin PSI sem erros sintáticos.
 - `PdfPrompt` testado via compilador Kotlin/JVM em sete cenários (limites, extração, anexos, texto de pergunta, histórico).
@@ -16,3 +16,10 @@
 - GenerationMeter testado isoladamente com compilador Kotlin; JUnit Gradle e build Android dependem do workflow CI.
 - DeviceSampler depende de APIs Android e requer teste no hardware real (temperatura da bateria disponível ou ausente, thermalStatus, PSS e RAM).
 - Qwen3 4B listado com SHA-256 do arquivo oficial; download/verificação e carregamento não foram executados neste ambiente.
+
+
+### Alpha.9: verificações executadas
+- OK: ausência do atributo não reconhecido do Android XML; substituído `android:scrollbars="none"`.
+- OK: parser PSI Kotlin em 30 arquivos e seis verificações diretas da estimativa com `kotlinc` JVM.
+- OK: 36 XML bem-formados, referência de IDs conferida e versão/versionCode sincronizados. ZIP: integridade verificada no empacotamento.
+- Build AAPT2, Kotlin e JNI em GitHub Actions **ainda pendente**.

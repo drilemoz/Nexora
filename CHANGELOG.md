@@ -1,3 +1,14 @@
+# Nexora • Histórico
+
+## 0.1.0-alpha.9 (versionCode 9)
+- Corrigido AAPT2: `android:horizontalScrollBarEnabled` inválido substituído por `android:scrollbars="none"` no chat.
+- Carregamento automático opcional (ativado por padrão) do último GGUF **carregado com sucesso**, interno ou baixado. A escolha fica em Configurações → Inteligência Artificial.
+- Indicador inicial com nome do modelo, tempo transcorrido e barra indeterminada; após uma carga medida do mesmo arquivo, apresenta porcentagem/ETA **estimados**, não porcentagem fornecida pelo llama.cpp.
+- Guarda contra ciclo de falha: carga automática interrompida entre processos exige próximo carregamento manual.
+- Serialização de carregamentos e trocas de conversa com Mutex; evita disputa de carga simultânea.
+- Preservados modelo, chats, PDF, identificador, Secrets e assinatura.
+- Testes locais sintáticos e de progresso; compilação Android completa e carregamento no aparelho ainda pendentes.
+
 ## 0.1.0-alpha.8
 - Nova página inicial de conversas seguindo referência enviada, busca, novo chat, pin/rename/delete, ordenação temporal.
 - Histórico SQLite com chats independentes, migração conservadora do conversation.json da alpha.7 e isolamento do contexto da engine.

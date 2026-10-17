@@ -1,6 +1,13 @@
-# Nexora • v0.1.0-alpha.8 (versionCode 8)
+# Nexora • v0.1.0-alpha.9 (versionCode 9)
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+## Alpha.9: Carregamento automático e correção do build
+
+- Correção do atributo XML inválido que impedia `:app:processDebugResources`.
+- Preferência de iniciar com o último modelo GGUF carregado com sucesso; opção desligável em Configurações.
+- Tela inicial indica carregamento, nome do modelo, tempo decorrido e estimativa de progresso/tempo restante apenas quando existe histórico real da carga anterior do mesmo arquivo.
+- Se a carga automática anterior tiver sido interrompida pelo Android, o próximo arranque exige carregamento manual por segurança.
 
 ## Alpha.8: Conversas, PDFs e modelos
 
@@ -23,7 +30,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.8-apk-debug` e `Nexora-v0.1.0-alpha.8-apk-release-assinado` (se os quatro Secrets configurados).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.9-apk-debug` e `Nexora-v0.1.0-alpha.9-apk-release-assinado` (se os quatro Secrets configurados).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações
@@ -98,3 +105,12 @@ No chat, o cartão **DESEMPENHO LOCAL** mostra o ritmo de fragmentos emitidos pe
 Novo catálogo: **Qwen3 4B Q4_K_M** (2,5 GB; SHA-256 validado conforme página oficial do arquivo). AVISO: o arquivo não é o total de RAM exigida! O motor e o KV cache exigem memória adicional; não é garantido que carregue no dispositivo do usuário. Se faltar RAM, não confundir com falha de integridade. Um modelo mais pesado pode não resultar em respostas mais rápidas ou corretas em todos os usos.
 
 O gráfico horizontal é uma escala visual de 0 a 30 fragmentos/s, saturando acima desse valor; rótulos de fluidez são faixas indicativas da geração, não prova de precisão do conteúdo.
+
+
+## Carregamento automático (alpha.9)
+- Abra Configurações → Modelos de IA e carregue um GGUF ao menos uma vez com sucesso.
+- A Nexora registra apenas nome e pasta privada do último modelo. Por padrão, tenta carregá-lo na próxima abertura do app.
+- O ajuste Carregar ao abrir, em Configurações, pode ser desativado.
+- Enquanto carrega, a tela inicial mostra o nome, o tempo decorrido e a barra animada. A porcentagem e o tempo restante aparecem apenas se houver medição anterior **do mesmo arquivo com o mesmo tamanho e data de modificação**, como estimativas.
+- Se o Android encerrar o processo durante um carregamento automático, a tentativa seguinte é bloqueada por segurança; carregue manualmente o GGUF e escolha outro modelo se estiver exigindo muita RAM.
+- Não é um preload de segundo plano: a abertura continua possível antes do modelo terminar.
