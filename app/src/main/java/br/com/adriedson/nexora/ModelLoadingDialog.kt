@@ -37,7 +37,7 @@ class ModelLoadingDialog(private val activity: AppCompatActivity) {
             dialog = built
             built.show()
         }
-        title?.text = "Carregando ${state.name}"
+        title?.text = "Carregando ${ModelLabels.fromOriginal(activity, state.name)}"
         progress?.isIndeterminate = true // upstream desta revisão não fornece callback nativo ao app
         if (ModelSession.isCancelRequested()) {
             cancel?.isEnabled = false

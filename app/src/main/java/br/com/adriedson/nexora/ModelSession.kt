@@ -42,6 +42,8 @@ object ModelSession {
     fun currentPath(): String? = path
     fun activeConversationId(): String? = activeChat
     fun currentName(): String? = path?.takeIf { File(it).isFile }?.let { File(it).name }
+    fun currentDisplayName(context: Context): String? = path?.takeIf { File(it).isFile }
+        ?.let { ModelLabels.display(context, File(it)) }
     fun engine(context: Context): InferenceEngine = AiChat.getInferenceEngine(context.applicationContext)
     fun isReady(context: Context): Boolean = currentName() != null && engine(context).state.value is InferenceEngine.State.ModelReady
     fun isLoading(): Boolean = loadState.value is ModelLoadState.Loading

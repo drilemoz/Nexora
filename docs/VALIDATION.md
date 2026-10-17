@@ -1,3 +1,9 @@
+# Validação 0.1.0-alpha.14
+
+- Verificar nomes Qwen3-4B / Qwen_Qwen3-1.7B, alias de usuário e rejeição de nomes inválidos.
+- Verificar modelo original preservado ao carregar, alternar entre conversas, reiniciar e restaurar nome padrão.
+- Validar unidade Kotlin/JVM de ModelDisplayNames, XML e CRC ZIP; Android/Gradle completo ainda pendente.
+
 # Validação 0.1.0-alpha.13
 
 - Conjunto de verificações locais: verificação de ancoragem dos patches native/Kotlin, testes do avaliador decimal e análise de sintaxe.

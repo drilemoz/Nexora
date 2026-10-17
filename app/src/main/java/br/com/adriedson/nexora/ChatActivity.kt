@@ -104,11 +104,11 @@ class ChatActivity : AppCompatActivity() {
             startActivity(Intent(this, ModelsActivity::class.java))
         }
         findViewById<TextView>(R.id.chatModelName).apply {
-            text = ModelSession.currentName() ?: "Modelo não carregado"
+            text = ModelSession.currentDisplayName(this@ChatActivity) ?: "Modelo não carregado"
             contentDescription = "Modelo em execução: $text. Toque para gerenciar; pressione para ver o nome completo."
             setOnLongClickListener {
                 MaterialAlertDialogBuilder(this@ChatActivity).setTitle("Modelo em execução")
-                    .setMessage(ModelSession.currentName() ?: "Nenhum modelo carregado")
+                     .setMessage("Nome exibido: ${ModelSession.currentDisplayName(this@ChatActivity) ?: "Nenhum"}\nArquivo GGUF original: ${ModelSession.currentName() ?: "Nenhum"}")
                     .setPositiveButton("Fechar", null).show()
                 true
             }
@@ -408,11 +408,11 @@ class ChatActivity : AppCompatActivity() {
             contextReady = false
             firstPrompt = true
             findViewById<TextView>(R.id.chatModelName).apply {
-            text = ModelSession.currentName() ?: "Modelo não carregado"
+            text = ModelSession.currentDisplayName(this@ChatActivity) ?: "Modelo não carregado"
             contentDescription = "Modelo em execução: $text. Toque para gerenciar; pressione para ver o nome completo."
             setOnLongClickListener {
                 MaterialAlertDialogBuilder(this@ChatActivity).setTitle("Modelo em execução")
-                    .setMessage(ModelSession.currentName() ?: "Nenhum modelo carregado")
+                     .setMessage("Nome exibido: ${ModelSession.currentDisplayName(this@ChatActivity) ?: "Nenhum"}\nArquivo GGUF original: ${ModelSession.currentName() ?: "Nenhum"}")
                     .setPositiveButton("Fechar", null).show()
                 true
             }

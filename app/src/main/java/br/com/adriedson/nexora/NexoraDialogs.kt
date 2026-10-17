@@ -37,6 +37,44 @@ object NexoraDialogs {
             .setPositiveButton("Salvar") { _, _ -> save(input.text.toString()) }.show()
     }
 
+    /** Altera apenas um apelido de apresentação, nunca o nome físico de um arquivo GGUF. */
+    fun renameModel(activity: AppCompatActivity, current: String,
+                    onSave: (String) -> Unit, onReset: () -> Unit) {
+        val density = activity.resources.displayMetrics.density
+        val input = EditText(activity).apply {
+            setText(current)
+            setSelection(text.length)
+            isSingleLine = true
+            filters = arrayOf(android.text.InputFilter.LengthFilter(48))
+            setTextColor(ThemePreferences.labelColor(activity))
+            hint = "Nome do modelo"
+        }
+        val container = LinearLayout(activity).apply {
+            setPadding((24 * density).toInt(), 0, (24 * density).toInt(), 0)
+            addView(input, ViewGroup.LayoutParams(-1, -2))
+        }
+        val dialog = MaterialAlertDialogBuilder(activity)
+            .setTitle("Renomear modelo")
+            .setMessage("O nome do arquivo GGUF permanece intacto. Só muda como aparece no Nexora.")
+            .setView(container)
+            .setNegativeButton("Cancelar", null)
+            .setNeutralButton("Restaurar padrão") { _, _ -> onReset() }
+            .setPositiveButton("Salvar", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val valid = ModelDisplayNames.validCustomName(input.text.toString())
+                if (valid == null) {
+                    input.error = "Informe um nome válido (1 a 48 caracteres)"
+                } else {
+                    onSave(valid)
+                    dialog.dismiss()
+                }
+            }
+        }
+        dialog.show()
+    }
+
     fun conversationMenu(activity: AppCompatActivity, pinned: Boolean,
                          onRename: () -> Unit, onPin: () -> Unit, onDelete: () -> Unit) {
         val density = activity.resources.displayMetrics.density

@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         // Problemas continuam visíveis sem bloquear a interface.
         if (state is ModelLoadState.Problem) {
             loadingCard.visibility = View.VISIBLE
-            loadingTitle.text = "Modelo: ${state.name}"
+            loadingTitle.text = "Modelo: ${ModelLabels.fromOriginal(this, state.name)}"
             loadingInfo.text = state.detail
             loadingProgress.isIndeterminate = false
             loadingProgress.progress = 0
@@ -158,7 +158,7 @@ class ConversationAdapter(
     override fun onBindViewHolder(h:Holder,pos:Int) {
         val c=items[pos]
         h.title.text=(if(c.pinned) "★  " else "")+c.title
-        h.model.text=c.model
+        h.model.text=ModelLabels.fromOriginal(h.itemView.context, c.model)
         val day=java.util.Calendar.getInstance().apply {timeInMillis=c.updated}
         val today=java.util.Calendar.getInstance()
         val heading=when {

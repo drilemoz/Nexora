@@ -145,7 +145,7 @@ class ModelsActivity : AppCompatActivity() {
                 .setNegativeButton("Fechar", null).show()
             return
         }
-        val labels = all.map { "${it.name}\n${StorageSummary.size(it.length())}" } +
+        val labels = all.map { "${ModelLabels.display(this, it)}\n${it.name} • ${StorageSummary.size(it.length())}" } +
             if (ModelSession.isReady(this)) listOf("Descarregar modelo ativo • liberar RAM") else emptyList()
         MaterialAlertDialogBuilder(this).setTitle("Biblioteca de modelos")
             .setItems(labels.toTypedArray()) { _, index ->
@@ -161,7 +161,10 @@ class ModelsActivity : AppCompatActivity() {
         NexoraDialogs.confirmDelete(this, "Excluir ${file.name}?",
             "Esta cópia privada será apagada. O arquivo original selecionado na pasta Downloads não será afetado.") {
             val removed = file.delete()
-            if (removed) ModelStartup.forgetIfMatches(this, file)
+            if (removed) {
+                ModelStartup.forgetIfMatches(this, file)
+                ModelLabels.clear(this, file)
+            }
             toast(if (removed) "Modelo removido" else "Falha ao excluir modelo")
             refresh()
         }
@@ -171,7 +174,7 @@ class ModelsActivity : AppCompatActivity() {
         if (busy || ModelSession.isLoading()) { toast("Já há um modelo sendo carregado"); return }
         if (ModelSession.startManualLoad(applicationContext, file)) {
             awaitingModel = file.name
-            message.text = "Carregando ${file.name}..."
+            message.text = "Carregando ${ModelLabels.display(this, file)}..."
             loadDialog.render(ModelSession.loadState.value)
         } else toast("Aguarde a operação atual terminar")
     }
@@ -203,7 +206,7 @@ class ModelsActivity : AppCompatActivity() {
             try {
                 val imported = withContext(Dispatchers.IO) { copyModel(uri) }
                 DiagnosticEvents.record(this@ModelsActivity, "model.import.ok", "sizeMb=${imported.length() / 1_000_000}")
-                message.text = "${imported.name} importado. Abra Modelos para carregar."
+                message.text = "${ModelLabels.display(this@ModelsActivity, imported)} importado. Abra Modelos para carregar."
                 toast("Modelo importado")
             } catch (_: CancellationException) {
                 message.text = "Importação interrompida."
@@ -282,7 +285,7 @@ class ModelsActivity : AppCompatActivity() {
                 setPadding(10, 16, 4, 16)
             }
             val label = TextView(this).apply {
-                text = "${if (ModelSession.currentPath() == file.absolutePath) "●  " else "◈  "}${file.name}\n${StorageSummary.size(file.length())}"
+                text = "${if (ModelSession.currentPath() == file.absolutePath) "●  " else "◈  "}${ModelLabels.display(this@ModelsActivity, file)}\n${file.name} • ${StorageSummary.size(file.length())}"
                 setTextColor(ThemePreferences.labelColor(this@ModelsActivity))
                 textSize = 13f
                 maxLines = 3
@@ -321,19 +324,40 @@ class ModelsActivity : AppCompatActivity() {
     private fun showModelDetails(file: File) {
         val location = if (file.parentFile?.canonicalPath == modelsDir().canonicalPath)
             "Biblioteca privada do Nexora" else "Biblioteca de downloads do aplicativo"
-        MaterialAlertDialogBuilder(this).setTitle(file.name)
-            .setMessage("Arquivo GGUF: ${StorageSummary.size(file.length())}\n" +
+        MaterialAlertDialogBuilder(this).setTitle(ModelLabels.display(this, file))
+            .setMessage("Nome original: ${file.name}\n" +
+                "Arquivo GGUF: ${StorageSummary.size(file.length())}\n" +
                 "Origem: $location\n" +
                 "Última modificação: ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(file.lastModified()))}\n" +
                 "Quantização indicada no nome: ${Regex("(Q[0-9]+(?:_[A-Z0-9]+)*)", RegexOption.IGNORE_CASE).find(file.name)?.value ?: "não identificada"}\n" +
                 "Nome original preservado. A quantização acima é inferida do nome, não dos metadados internos.")
-            .setPositiveButton("Carregar") { _, _ -> load(file) }
+            .setPositiveButton(if (ModelSession.currentPath() == file.absolutePath) "Ativo" else "Carregar") { _, _ ->
+                if (ModelSession.currentPath() != file.absolutePath) load(file)
+            }
+            .setNeutralButton("Renomear") { _, _ -> renameLabel(file) }
             .setNegativeButton("Fechar", null).show()
     }
+    private fun renameLabel(file: File) {
+        NexoraDialogs.renameModel(this, ModelLabels.display(this, file),
+            onSave = { newName ->
+                if (ModelLabels.save(this, file, newName)) {
+                    refresh()
+                    toast("Nome exibido atualizado")
+                } else toast("Digite um nome de 1 a 48 caracteres")
+            },
+            onReset = {
+                ModelLabels.clear(this, file)
+                refresh()
+                toast("Nome padrão restaurado")
+            })
+    }
+
     private fun dp(n: Int) = (n * resources.displayMetrics.density + .5f).toInt()
     private fun refresh() {
         val name = ModelSession.currentName()
-        status.text = name ?: "Nenhum modelo carregado"
+        status.text = ModelSession.currentDisplayName(this) ?: "Nenhum modelo carregado"
+        status.contentDescription = if (name == null) "Nenhum modelo carregado" else
+            "${ModelSession.currentDisplayName(this)}. Nome original: $name"
         val memory = ActivityManager.MemoryInfo()
         (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(memory)
         detail.text = "${if (name == null) "Aguardando modelo" else "● Offline • ARM64"}  ·  ${memory.availMem / 1_048_576} MiB de RAM livres"

@@ -1,3 +1,11 @@
+# Nexora 0.1.0-alpha.14
+
+- Nome amigável automático para arquivos GGUF conhecidos e personalização local por modelo.
+- Ação Renomear nos detalhes e Restaurar padrão no editor, sem mexer no GGUF ou no histórico das conversas.
+- Apelido aplicado a carregamento, lista, conversas e nome ativo; nome original sempre consultável nos detalhes.
+- Compatibilidade da biblioteca e do motor preservada, sem novos serviços.
+- Build Android e teste físico pendentes.
+
 # Nexora 0.1.0-alpha.13
 
 - Diferencia saída concluída (EOG) de resposta incompleta ao atingir limite de tokens ou erro de decode.

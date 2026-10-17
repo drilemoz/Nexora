@@ -1,5 +1,13 @@
 # Histórico Nexora
 
+## 0.1.0-alpha.14 • 17/10/2026
+- Nomes de exibição amigáveis na lista, detalhes, carregamento, tela inicial e conversas; `Qwen3-4B-Q4_K_M.gguf` aparece como `Qwen 3 • 4B` por padrão.
+- Opção **Renomear** e **Restaurar padrão** em detalhes do modelo, com apelido persistido em preferências privadas e aplicado também em conversas existentes.
+- O arquivo GGUF original, caminhos, associação no SQLite, metadados da quantização e identificação técnica para o llama.cpp **não são alterados**; nome original permanece visível nos detalhes e ao pressionar o rótulo do chat.
+- Não altera inferência, limite de contexto, consumo de RAM, assinatura, permissões ou formato do banco.
+- Validação Android/Gradle e teste visual no telefone continuam pendentes.
+
+
 ## 0.1.0-alpha.12 • 17/10/2026
 - CI publica uma variante por execucao: Release assinado com Secrets ou Debug fallback; elimina a lista duplicada de instaladores no GitHub Manager.
 - Patches auditaveis no motor fixado: n_ctx 8192 → 4096 e correcoes do limite de geracao e da contagem apos truncamento do prompt. Preserva o commit upstream. Janelas grandes exigem testes antes de futuras mudancas.

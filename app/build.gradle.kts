@@ -11,8 +11,8 @@ android {
         applicationId = "br.com.adriedson.nexora"
         minSdk = 33 // Requisito atual do módulo Android oficial do llama.cpp
         targetSdk = 35
-        versionCode = 13
-        versionName = "0.1.0-alpha.13"
+        versionCode = 14
+        versionName = "0.1.0-alpha.14"
         ndk { abiFilters += "arm64-v8a" }
     }
 
