@@ -12,6 +12,9 @@ class ThinkingTextFilter {
         for (char in token) feed(char)
     }
 
+    /** Permite pular renderização enquanto só chegam tokens de raciocínio oculto. */
+    fun visibleLength(): Int = shown.length
+
     /** Chamar apenas quando a interface realmente precisar renderizar. */
     fun visibleText(): String = shown.toString().trimStart()
 
@@ -29,6 +32,12 @@ class ThinkingTextFilter {
     }
 
     private fun feed(char: Char) {
+        // Caminho comum: caracteres de texto não participam de tags <think>.
+        // Evita criar String temporária para cada letra da resposta.
+        if (prefix.isEmpty() && char != '<') {
+            if (!inside) shown.append(char)
+            return
+        }
         prefix.append(char)
         while (prefix.isNotEmpty()) {
             val current = prefix.toString()

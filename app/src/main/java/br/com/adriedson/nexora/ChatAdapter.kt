@@ -25,6 +25,21 @@ class ChatAdapter(private val messages: List<ChatMessage>, private val onRetry: 
         LayoutInflater.from(parent.context).inflate(R.layout.item_message, parent, false)
     )
     override fun getItemCount() = messages.size
+
+    /** Atualização de streaming: não recria fundo, dimensões e listeners da bolha. */
+    fun notifyStreamingTextChanged(position: Int) = notifyItemChanged(position, PAYLOAD_TEXT_ONLY)
+
+    override fun onBindViewHolder(holder: Holder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty() && payloads.all { it === PAYLOAD_TEXT_ONLY }) {
+            val message = messages[position]
+            holder.text.text = MessageMarkup.render(message.text)
+            holder.bubble.contentDescription =
+                (if (message.role == "user") "Mensagem enviada: " else "Resposta Nexora: ") + message.text
+            return
+        }
+        super.onBindViewHolder(holder, position, payloads)
+    }
+
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val message = messages[position]
         val c = holder.itemView.context
@@ -63,4 +78,5 @@ class ChatAdapter(private val messages: List<ChatMessage>, private val onRetry: 
         holder.bubble.contentDescription=(if(user)"Mensagem enviada: " else "Resposta Nexora: ")+message.text
     }
     private fun dp(context: Context,n:Int)=(n*context.resources.displayMetrics.density+.5f).toInt()
+    private companion object { val PAYLOAD_TEXT_ONLY = Any() }
 }

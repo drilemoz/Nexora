@@ -1,3 +1,22 @@
+# Nexora 0.1.0-alpha.20
+
+**Painel de desempenho realocado para o topo do chat.**
+
+- Cartão DESEMPENHO LOCAL agora aparece abaixo de IA LOCAL ATIVA, antes do histórico da conversa; o editor e os anexos permanecem na parte inferior.
+- O painel mantém as métricas e o controle de expansão; nenhuma mudança em GGUF, JNI, SQLite, assinatura ou política de amostragem.
+- Testes de regressão estáticos de hierarquia do XML e ids; compilação Android/Gradle e teste visual no aparelho ainda pendentes.
+
+# Nexora 0.1.0-alpha.19
+
+**Otimizações do chat e do armazenamento, sem alterar o motor de IA.**
+
+- Streaming exibe texto novo a até 5 atualizações/s (antes até 8), sem redesenhar Markdown para conteúdo de raciocínio oculto; medidor continua visível com periodicidade reduzida.
+- Atualizações incrementais do RecyclerView alteram só o texto; decorações e listeners da bolha são preservados, e a rolagem manual não é interrompida.
+- Regex do Markdown são compiladas uma vez; processamento de linhas evita lista intermediária. Filtro `<think>` não aloca strings temporárias para caracteres comuns.
+- SQLite preserva registros antigos inalterados quando novos textos são salvos, incluindo a janela móvel de 200 mensagens. Transações, formato, limite por mensagem e conversas existentes permanecem intactos.
+- Novos testes unitários para decisões de atualização do texto e persistência incremental; sem modificações de GGUF, JNI, API Android ou política de assinatura.
+- Pendente validação Android/Gradle da alpha.19 e testes físicos de responsividade, memória, autonomia e carregamento do Qwen3-4B; não há benchmark comprovando ganho no aparelho.
+
 # Nexora 0.1.0-alpha.18
 
 **Correções de inferência, memória e privacidade.** Revisão do llama.cpp e parâmetros de perfis preservados.

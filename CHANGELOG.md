@@ -1,3 +1,17 @@
+## 0.1.0-alpha.20 (versionCode 20) • 17/10/2026
+- Interface de conversa: painel Desempenho local movido do rodapé para abaixo do indicador IA LOCAL ATIVA, antes da lista de mensagens.
+- Mantidos status, velocidade, PSS, bateria, RAM, pressão térmica e expansão de detalhes, sem modificar o monitoramento ou o armazenamento.
+- Campo de mensagem, anexos e status continuam no rodapé; RecyclerView permanece com altura flexível e rolagem independente.
+- Validação de posicionamento XML adicionada ao workflow; build Android e teste visual em aparelho permanecem pendentes.
+
+## 0.1.0-alpha.19 (versionCode 19) • 17/10/2026
+- Reduz redraw de respostas: até 5 atualizações de texto por segundo em vez de até 8; renderiza apenas quando novos caracteres visíveis surgem, sem redraw para tokens ocultos de `<think>`.
+- RecyclerView recebe payload apenas de texto durante streaming; evita reconstruir fundo, dimensões e handlers das mensagens; mantém a posição de leitura ao rolar para cima.
+- Markdown reutiliza Regex compiladas e lineSequence() para reduzir alocações na renderização; filtro `<think>` evita novas strings no caminho comum por caractere.
+- Salvamento SQLite passa a preservar sufixo das linhas antigas correspondente ao prefixo da nova sequência, apagando apenas linhas obsoletas e inserindo apenas novas; limite de 200 mensagens e 32.000 caracteres por item preservados, sem migração.
+- Testes unitários acrescentados para política visual e alinhamento incremental do histórico. Modelo GGUF, native/JNI, contexto, permissões e assinatura sem alterações.
+- Otimização de carga na UI/SQLite inferida do código; nenhuma melhoria de tokens/s, PSS, bateria ou temperatura foi demonstrada por medição física.
+
 ## 0.1.0-alpha.18 (versionCode 18) • 17/10/2026
 - Patches auditáveis no llama.cpp fixado: remove o vazamento do texto formatado e dos tokens de saída no Logcat; mantém diagnóstico por contagens sem revelar conteúdo.
 - Corrige posições de batches após deslocamento do KV, sem recontar tokens do prompt. Impõe limite de saída pelo contador nativo, que não recua quando o contexto desliza.

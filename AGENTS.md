@@ -1,6 +1,6 @@
 # Nexora • Regras de desenvolvimento
 - App Android nativo Kotlin, GGUF offline em CPU via llama.cpp. Internet somente para download explícito de modelos.
-- Versão atual: `0.1.0-alpha.18` (`versionCode 18`). Próxima: `0.1.0-alpha.19` (`versionCode 19`).
+- Versão atual: `0.1.0-alpha.20` (`versionCode 20`). Próxima: `0.1.0-alpha.21` (`versionCode 21`).
 - Em cada alteração, incrementar sequencialmente `versionName` e `versionCode`; sincronizar README, CHANGELOG, docs/VERSIONING, docs/RELEASE_NOTES, workflow e identidade.
 - Identidade definitiva desde alpha.6: `br.com.adriedson.nexora`. Não restaurar o package antigo.
 - As quatro credenciais de assinatura permanecem opcionais via GitHub Secrets; nunca distribuir keystore nem senhas no repositório.
@@ -26,3 +26,7 @@
 - Alpha.17: cartões de modelos compactos exibem apenas apelido, quantização e tamanho; filename completo permanece nos detalhes. Lixeira visual reduzida com área de toque 48 dp e confirmação; menu personalizado usa um ícone para cada uma das cinco ações.
 
 - Alpha.18: reset KV + sampler sem descartar os pesos GGUF ao alternar/regenerar conversa; após cancelamento, limite ou falha, reconstruir contexto do histórico antes de permitir novo envio. Patches falham com revisão diferente e CI valida âncoras. Não prometer funcionamento sem validar a build JNI.
+
+- Alpha.19: atualizar apenas TextView durante streaming, no máximo 5/s com novos caracteres visíveis; medidor até 1/s para raciocínio oculto; preservar rolagem manual. SQLite preserva linhas antigas iguais em transação sem alterar schema.
+
+- Alpha.20: cartão de desempenho realocado para imediatamente abaixo do indicador de IA local e antes da lista de mensagens, fora da rolagem. Mantém telemetria, acessibilidade e expansão existente; anexos e editor permanecem ancorados embaixo.

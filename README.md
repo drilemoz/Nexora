@@ -1,4 +1,4 @@
-# Nexora • v0.1.0-alpha.18 (versionCode 18)
+# Nexora • v0.1.0-alpha.20 (versionCode 20)
 
 **Alpha.18:** correção de privacidade no Logcat (mensagens formatadas e tokens emitidos), contagem de tokens de saída independente dos deslocamentos KV, ajuste de posições dos batches durante deslocamento de contexto e liberação de recursos de load incompleto. A troca/regeneração de chat passa a limpar apenas contexto KV, histórico e sampler, mantendo os pesos GGUF na RAM. Cancelamentos, saída não natural, limpeza de conversa e troca de chats invalidam contexto antes da próxima geração; streaming reconstrói texto no máximo durante atualização da UI. O fluxo de cancelamento ao sair da tela permanece. **Alterações no JNI exigem build/testes reais.**
 
@@ -11,6 +11,17 @@
 **Alpha.14:** nomes de exibição configuráveis em Configurações → Modelos de IA → detalhes → Renomear. O nome original do GGUF não muda, e é mostrado nos detalhes e no toque prolongado no cabeçalho do chat. Ex.: `Qwen3-4B-Q4_K_M.gguf` aparece como `Qwen 3 • 4B`. Restaurar padrão limpa apenas o apelido.
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+### Interface da alpha.20
+- O painel **Desempenho local** agora fica logo após **IA LOCAL ATIVA**, no topo da conversa, antes das mensagens. O campo de edição, anexos e avisos continuam fixos na parte inferior.
+- O painel mantém métricas e controle de expansão originais; nenhuma lógica de inferência, dados, carregamento de GGUF ou tempo de amostragem foi alterado.
+
+### Otimizações da alpha.19
+- Streaming limita renderização do texto a **até 5 atualizações/s**, ignora atualizações sem caracteres visíveis e mantém medidor de atividade a cada ~1 s durante `<think>` oculto.
+- RecyclerView atualiza somente o texto das mensagens em andamento, preserva a rolagem manual e evita recriar decorações/listeners.
+- Markdown usa expressões pré-compiladas e iteração por linha sem lista intermediária; filtro `<think>` evita alocações para caracteres comuns.
+- SQLite reutiliza registros antigos inalterados dentro de transação, em vez de apagar e reinserir até 200 mensagens a cada salvamento. Esquema do banco permanece na versão 1.
+- **Sem mudança no llama.cpp ou nas opções de threads/contexto**. Ganhos de FPS/CPU, bateria e memória ainda não foram medidos no aparelho.
 
 ## Alpha.13: fim de geração, matemática confiável e diagnóstico real
 - Patch adicional no JNI/llama.cpp fixado: distingue fim natural (EOG), limite de tokens e erro nativo; mede quantidade real de tokens, quantidade de tokens do prompt e tempo de processamento/geração. Não confundir com os fragmentos recebidos na interface.
@@ -67,7 +78,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.18-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.18-apk-debug` (sem Secrets).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.20-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.20-apk-debug` (sem Secrets).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

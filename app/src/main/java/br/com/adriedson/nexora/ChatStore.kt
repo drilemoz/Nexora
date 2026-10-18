@@ -62,11 +62,30 @@ class ChatStore(context: Context) : SQLiteOpenHelper(context.applicationContext,
     fun save(id: String, messages: List<ChatMessage>, model: String?) {
         require(exists(id)) { "Conversa inexistente" }
         val db=writableDatabase
+        // Mantém somente as 200 mensagens mais recentes e os mesmos limites anteriores.
+        val desired = messages.takeLast(200)
+            .filter { (it.role == "user" || it.role == "assistant") && it.text.isNotBlank() }
+            .map { ChatMessage(it.role, it.text.take(32000)) }
         db.beginTransaction()
         try {
-            db.delete("messages","conversation_id=?",arrayOf(id))
-            messages.takeLast(200).filter { it.role in setOf("user","assistant") && it.text.isNotBlank() }.forEach {
-                db.insertOrThrow("messages",null,values("conversation_id" to id,"role" to it.role,"content" to it.text.take(32000)))
+            // Localiza o maior sufixo antigo igual ao prefixo desejado.
+            // Ex.: [A,B,C] -> [A,B,C,D] insere apenas D; após ultrapassar 200,
+            // remove somente as linhas mais antigas, preservando IDs recentes.
+            val diskIds = ArrayList<Long>()
+            val diskMessages = ArrayList<ChatMessage>()
+            db.rawQuery("SELECT id,role,content FROM messages WHERE conversation_id=? ORDER BY id",arrayOf(id)).use { c ->
+                while(c.moveToNext()) {
+                    diskIds.add(c.getLong(0))
+                    diskMessages.add(ChatMessage(c.getString(1), c.getString(2)))
+                }
+            }
+            val kept = MessageSaveDiff.retainedCount(diskMessages, desired)
+            val removed = diskIds.size - kept
+            if (removed > 0) db.delete("messages", "conversation_id=? AND id<=?",
+                arrayOf(id, diskIds[removed - 1].toString()))
+            for (item in desired.drop(kept)) {
+                db.insertOrThrow("messages", null,
+                    values("conversation_id" to id, "role" to item.role, "content" to item.text))
             }
             val lastQuestion = messages.firstOrNull { it.role=="user" }?.text?.lineSequence()?.firstOrNull()?.take(65)?.trim()
             val old=get(id)

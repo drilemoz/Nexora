@@ -1,3 +1,25 @@
+# Validação 0.1.0-alpha.20 (código-fonte)
+
+- Base: ZIP alpha.19; alteração pontual da posição do cartão no `activity_chat.xml`.
+- [OK] Teste de regressão estático da hierarquia XML em `scripts/verify_chat_layout_alpha20.py` (executado localmente e no workflow).
+- [OK] Identificadores dos componentes preservados, painel antes do RecyclerView de mensagens, rodapé/compositor depois, lista com peso 1 e detalhes recolhíveis.
+- [OK] Verificação XML, Python, ZIP/CRC e versionamento local.
+- [PENDENTE] Build Gradle/Android e teste visual/interativo no dispositivo para tema, teclados, rolagem e expansão.
+- Sem alterações em motor llama.cpp, banco, modelos e métricas da alpha.19.
+
+# Validação 0.1.0-alpha.19 (código-fonte)
+
+## Escopo
+- Base oficial: ZIP `Nexora-v0.1.0-alpha.18-fonte-corrigida.zip`; alpha.18 já obteve build Release assinado com sucesso no GitHub Actions #12 (não prova esta nova versão).
+- Novo código: política de atualização de UI, renderização parcial, filtro de raciocínio otimizado e otimização de gravações no SQLite. Sem mudanças do motor nativo, banco versionado ou AndroidManifest.
+- [OK] Kotlin PSI: **57 arquivos, 0 erros sintáticos**; 58 testes JVM executados (17 para funcionalidades alteradas, 41 herdados), **0 falhas**. Execução com stubs JVM locais, não é Gradle oficial.
+- [OK] 46 arquivos XML válidos; YAML do workflow verificado; Python py_compile e bash -n aprovados.
+- [OK] SQLite em memória com **800 operações** de inclusão, edição, exclusão e janela móvel, conferindo igualdade exata com a sequência anterior; valida o algoritmo reimplementado no teste, não executa código SQLite Android.
+- [OK] Integridade ZIP e CRC serão verificados no empacotamento. Não inclui pesos GGUF, keystore ou APK.
+- [PENDENTE] Gradle/Android e JNI reais da alpha.19, UI e testes físicos de Qwen3-4B. A alpha.18 compilou, mas a compilação não foi repetida para esta versão.
+- Confirmar via GitHub Actions `:app:testDebugUnitTest` e `:app:assembleRelease` antes de instalar. Testar no aparelho fluxo de geração, histórico com 200+ mensagens, exclusões, regeneração e rolagem enquanto recebe tokens.
+- Comparar processamento/CPU de UI e consumo em mesmas condições com alpha.18; reduções no código não são medições de desempenho real.
+
 # Validação 0.1.0-alpha.18 (código-fonte)
 
 ## Resultado local de 17/10/2026

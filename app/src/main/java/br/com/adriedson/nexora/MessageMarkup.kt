@@ -9,12 +9,15 @@ import android.text.style.TypefaceSpan
 
 /** Markdown textual seguro: sem HTML, URLs automáticas, JavaScript ou chamadas externas. */
 object MessageMarkup {
+    // Pré-compilar expressões evita novas alocações por linha e por atualização do streaming.
+    private val headingPattern = Regex("^\\s{0,3}(#{1,6})\\s+")
+    private val bulletPattern = Regex("^\\s*([-*+]\\s+|\\d+[.)]\\s+)")
+
     fun render(raw: String): CharSequence {
         if (raw.isBlank()) return "Gerando..."
         val output = SpannableStringBuilder()
-        val lines = raw.lines()
         var code = false
-        for ((index, original) in lines.withIndex()) {
+        for ((index, original) in raw.lineSequence().withIndex()) {
             if (index > 0) output.append('\n')
             val line = original.trimEnd()
             if (line.trimStart().startsWith("```")) { code = !code; continue }
@@ -23,8 +26,8 @@ object MessageMarkup {
                 output.setSpan(TypefaceSpan("monospace"),at,output.length,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 continue
             }
-            val heading=Regex("^\\s{0,3}(#{1,6})\\s+").find(line)
-            val bullet=Regex("^\\s*([-*+]\\s+|\\d+[.)]\\s+)").find(line)
+            val heading=headingPattern.find(line)
+            val bullet=bulletPattern.find(line)
             val prefix=when { heading!=null -> "";bullet!=null -> "• "; else -> "" }
             val content=when { heading!=null->line.drop(heading.value.length);bullet!=null->line.drop(bullet.value.length);else->line }
             val start=output.length

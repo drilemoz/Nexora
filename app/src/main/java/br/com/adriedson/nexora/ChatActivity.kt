@@ -306,6 +306,8 @@ class ChatActivity : AppCompatActivity() {
         val filter = ThinkingTextFilter()
         val responseIndex = messages.lastIndex
         var lastUiUpdateNs = 0L
+        var lastMeterUpdateNs = 0L
+        var renderedVisibleChars = 0
         generationCancelReason = "none"
         val configuredTokens = ModelSession.currentPath()?.let { ModelInferencePreferences.get(this, java.io.File(it)).maxTokens } ?: 512
         val generationLimit = if (thinking) (configuredTokens * 3 / 2).coerceAtMost(1536) else configuredTokens
@@ -322,15 +324,26 @@ class ChatActivity : AppCompatActivity() {
                         val nowNs = SystemClock.elapsedRealtimeNanos()
                         meter.onFragment(token, nowNs)
                         filter.accept(token)
-                        // Materializar texto apenas nas atualizações (~8/s), não por token.
-                        if (lastUiUpdateNs == 0L || nowNs - lastUiUpdateNs >= 125_000_000L) {
+                        // Não renderizar Markdown dos tokens ocultos nem refazer toda a bolha.
+                        val visibleChars = filter.visibleLength()
+                        if (StreamingUiPolicy.shouldRenderText(visibleChars, renderedVisibleChars, nowNs, lastUiUpdateNs)) {
                             val visible = filter.visibleText()
-                            response.text = visible
-                            if (visible.isNotEmpty()) status.text = "Resposta local em andamento..."
-                            displayMeter()
-                            adapter.notifyItemChanged(responseIndex)
-                            list.scrollToPosition(responseIndex)
+                            if (response.text != visible) {
+                                val lastVisible = (list.layoutManager as? LinearLayoutManager)
+                                    ?.findLastVisibleItemPosition() ?: responseIndex
+                                response.text = visible
+                                if (visible.isNotEmpty()) status.text = "Resposta local em andamento..."
+                                adapter.notifyStreamingTextChanged(responseIndex)
+                                if (StreamingUiPolicy.shouldAutoScroll(lastVisible, responseIndex))
+                                    list.scrollToPosition(responseIndex)
+                            }
+                            renderedVisibleChars = visibleChars
                             lastUiUpdateNs = nowNs
+                        }
+                        // Ainda mostrar contagem/velocidade enquanto o modelo raciocina em silêncio.
+                        if (StreamingUiPolicy.shouldUpdateMeter(nowNs, lastMeterUpdateNs)) {
+                            displayMeter()
+                            lastMeterUpdateNs = nowNs
                         }
                     }
                 val engineStats = ModelSession.engine(applicationContext).lastGenerationStats
