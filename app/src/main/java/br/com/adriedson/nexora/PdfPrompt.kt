@@ -14,6 +14,10 @@ object PdfPrompt {
         return ranked.take(2).sortedBy {it.first}.joinToString("\n[…]\n"){it.second}.take(MAX_CONTEXT_CHARS)
     }
     fun compose(question:String, pdfs:List<PdfAttachment>, history:List<ChatMessage>):String {
+        // Pergunta de primeiro turno sem anexos nem contexto: passar exatamente o texto
+        // digitado. Prefixos como PERGUNTA ATUAL: desnecessários podem prejudicar
+        // modelos pequenos e diferenciar comparações entre motores.
+        if (pdfs.isEmpty() && history.isEmpty()) return question
         val prior=history.takeLast(4).joinToString("\n") {
             val who=if(it.role=="user")"Pessoa" else "Assistente"
             "$who: ${it.text.take(330)}"

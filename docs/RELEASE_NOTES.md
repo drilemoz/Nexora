@@ -1,3 +1,11 @@
+# Nexora 0.1.0-alpha.25
+
+**Comparação mais justa da inferência offline e diagnóstico de parâmetros.**
+
+- Primeira mensagem de conversa vazia sem PDF é enviada exatamente como digitada, sem moldura adicional; históricos/PDFs permanecem limitados como antes.
+- Exportação acrescenta parâmetros aplicados ao carregar o GGUF ativo, distinguindo-os das preferências editadas depois e de mensagens históricas. Nenhuma mensagem é enviada automaticamente.
+- O teste do ciclista apresentou respostas erradas nos dois apps. O JSON do PocketPal não certifica nome do GGUF; não há evidência de correção dos erros matemáticos. Compilação Android e teste físico pendentes.
+
 # Nexora 0.1.0-alpha.24
 
 **Correção de compilação nos controles Material do histórico.**

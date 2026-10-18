@@ -330,6 +330,7 @@ class ChatActivity : AppCompatActivity() {
         generation = lifecycleScope.launch {
             try {
                 val pdfs = if (firstPrompt || pdfDirty) store.pdfs(chatId) else emptyList()
+                // Sem histórico/PDF, PdfPrompt devolve a pergunta sem nenhuma moldura.
                 val composed = if (firstPrompt || pdfs.isNotEmpty())
                     PdfPrompt.compose(userText, pdfs, if(firstPrompt) previous else emptyList()) else userText
                 firstPrompt = false
@@ -465,8 +466,8 @@ class ChatActivity : AppCompatActivity() {
                         val stored = store.load(chatId)
                         val item = store.get(chatId) ?: error("Conversa não encontrada")
                         val report = ConversationExport.build(item, stored, ModelSession.currentName(),
-                            ModelSession.cachedTemplateReport(), lastNativeStats,
-                            data, thinking, contextReady)
+                            ModelSession.cachedTemplateReport(), ModelSession.currentInferenceSettings(),
+                            lastNativeStats, data, thinking, contextReady)
                         ConversationExport.save(applicationContext, item, report)
                     } }
                     result.onSuccess { uri ->

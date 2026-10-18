@@ -22,6 +22,7 @@ object ConversationExport {
         history: List<ChatMessage>,
         activeModel: String?,
         template: ModelTemplateReport?,
+        appliedInference: ModelInferenceSettings?,
         native: NativeGenerationStats?,
         device: DeviceSampler.Snapshot,
         thinkModeEnabled: Boolean,
@@ -47,7 +48,18 @@ object ConversationExport {
                 .put("endReason", native.reason)
         }
         val technical = JSONObject()
-            .put("appVersion", "0.1.0-alpha.24")
+            .put("appVersion", "0.1.0-alpha.25")
+            .put("inferenceAtLoad", if (appliedInference == null) JSONObject.NULL else JSONObject()
+                .put("source", "configuracao_aplicada_ao_carregar_modelo")
+                .put("preset", appliedInference.preset)
+                .put("contextTokens", appliedInference.contextSize)
+                .put("threads", appliedInference.threads)
+                .put("temperature", appliedInference.temperature.toDouble())
+                .put("topP", appliedInference.topP.toDouble())
+                .put("topK", appliedInference.topK)
+                .put("minP", appliedInference.minP.toDouble())
+                .put("repeatPenalty", appliedInference.repeatPenalty.toDouble())
+                .put("maxOutputTokens", appliedInference.maxTokens))
             .put("modelRecordedInConversation", chat.model)
             .put("modelActiveAtExport", activeModel ?: JSONObject.NULL)
             .put("modelMayHaveChanged", activeModel != null && chat.model != activeModel)
@@ -80,7 +92,9 @@ object ConversationExport {
             .put("technical", technical)
             .put("limitations", "Métricas são um snapshot na exportação, não medições históricas de cada resposta. " +
                 "A exportação não contém o conteúdo de PDFs nem os tokens internos do prompt. " +
-                "O arquivo não comprova a causa de eventuais erros matemáticos.")
+                "Parâmetros de inferência são os aplicados na sessão atual; conversas antigas " +
+                "podem ter usado outras configurações ou outros modelos. O arquivo não comprova a " +
+                "causa de eventuais erros matemáticos.")
             .toString(2)
     }
 

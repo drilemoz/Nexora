@@ -1,3 +1,9 @@
+## 0.1.0-alpha.25 (versionCode 25) • 17/10/2026
+- Comparação de arquivos de conversas Nexora/PocketPal revelou respostas matemáticas incorretas em ambos; diferença de modelos não verificável no JSON do PocketPal.
+- Perguntas de primeiro turno sem PDF e sem histórico são enviadas sem prefixo artificial `PERGUNTA ATUAL:`. Historico resumido/PDFs conservam a formatação anterior; testes de regressão incluídos.
+- Exportação JSON de conversa agora registra contexto, threads, temperatura, Top-P, Top-K, Min-P, penalidade, limite de saída e preset **aplicados ao carregar** o modelo ativo; ausentes se indisponíveis. Não atribui esses valores retroativamente a mensagens antigas.
+- Não modifica GGUF, llama.cpp, configuração do sampler, rede, SQLite ou assinatura. Sem promessa de melhora na precisão de modelos de 1B. Compilação e reavaliação no aparelho pendentes.
+
 ## 0.1.0-alpha.24 (versionCode 24) • 17/10/2026
 
 - Corrige o erro AAPT2 `attribute insetBottom/insetTop not found` no `item_conversation.xml`: substitui os atributos `app:` por `android:` nos dois `MaterialButton` de seleção de histórico, preservando insets 0dp e a aparência.

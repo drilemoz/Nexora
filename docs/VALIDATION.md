@@ -1,3 +1,8 @@
+## Alpha.25 • 17/10/2026
+- Base: código-fonte alpha.24; versão alpha.25/versionCode 25; mudanças limitadas a prompt sem contexto, snapshot aplicado e exportação diagnóstica.
+- Os JSONs de teste são analisados separadamente e **não incluídos** no código-fonte entregue, para preservar a privacidade.
+- Testes estáticos e Kotlin/JVM locais executados quando disponíveis; Gradle Android/NDK e GGUF reais ainda pendentes.
+
 # Validação alpha.24 (correção de AAPT2)
 
 - Analisado ZIP de logs "Gerar APK Nexora #16": `:app:processDebugResources` falhou em quatro referências `app:insetTop/app:insetBottom` de `item_conversation.xml`.

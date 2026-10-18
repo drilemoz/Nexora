@@ -31,6 +31,9 @@ sealed class ModelLoadState {
 object ModelSession {
     @Volatile private var path: String? = null
     @Volatile private var latestTemplateInfo: ModelTemplateReport? = null
+    // Snapshot dos parâmetros configurados no motor no carregamento efetivo.
+    // Alterações nas preferências só entram em vigor após novo load.
+    @Volatile private var appliedInferenceSettings: ModelInferenceSettings? = null
     @Volatile private var activeChat: String? = null
     @Volatile private var contextDirty = false
     private val sessionMutex = Mutex()
@@ -43,6 +46,7 @@ object ModelSession {
 
     fun currentPath(): String? = path
     fun cachedTemplateReport(): ModelTemplateReport? = latestTemplateInfo
+    fun currentInferenceSettings(): ModelInferenceSettings? = appliedInferenceSettings
 
     /** Formata e tokeniza apenas quatro mensagens sintéticas em uma chamada serializada. */
     suspend fun verifyTemplate(context: Context): ModelTemplateReport? = withContext(Dispatchers.IO) {
@@ -155,6 +159,7 @@ object ModelSession {
                     else -> Unit
                 }
                 path = null
+                appliedInferenceSettings = null
                 latestTemplateInfo = null
                 activeChat = null
                 contextDirty = false
@@ -169,6 +174,7 @@ object ModelSession {
                     throw CancellationException("Carregamento cancelado após liberação do motor")
                 }
                 path = model.absolutePath
+                appliedInferenceSettings = inference
                 latestTemplateInfo = ModelTemplateReport.parse(e.templateReport(false))
                 val template = latestTemplateInfo
                 DiagnosticEvents.record(context, "template.detect", "origin=${template?.origin ?: "unknown"} family=${template?.family ?: "unknown"}")
@@ -182,6 +188,7 @@ object ModelSession {
                 mutableLoadState.value = ModelLoadState.Ready(model.name)
             } catch (e: CancellationException) {
                 path = null
+                appliedInferenceSettings = null
                 latestTemplateInfo = null
                 activeChat = null
                 contextDirty = false
@@ -197,6 +204,7 @@ object ModelSession {
                 } catch (_: Exception) { /* preservar falha original no diagnóstico */ }
                 DiagnosticEvents.record(context, "model.load.error", "name=${model.name.take(95)} type=${e.javaClass.simpleName}", "ERROR")
                 path = null
+                appliedInferenceSettings = null
                 latestTemplateInfo = null
                 activeChat = null
                 contextDirty = false
@@ -227,6 +235,7 @@ object ModelSession {
                 else -> Unit
             }
             path = null
+            appliedInferenceSettings = null
             latestTemplateInfo = null
             activeChat = null
             contextDirty = false
