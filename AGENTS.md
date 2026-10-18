@@ -1,6 +1,6 @@
 # Nexora • Regras de desenvolvimento
 - App Android nativo Kotlin, GGUF offline em CPU via llama.cpp. Internet somente para download explícito de modelos.
-- Versão atual: `0.1.0-alpha.23` (`versionCode 23`). Próxima: `0.1.0-alpha.24` (`versionCode 24`).
+- Versão atual: `0.1.0-alpha.24` (`versionCode 24`). Próxima: `0.1.0-alpha.25` (`versionCode 25`).
 - Em cada alteração, incrementar sequencialmente `versionName` e `versionCode`; sincronizar README, CHANGELOG, docs/VERSIONING, docs/RELEASE_NOTES, workflow e identidade.
 - Identidade definitiva desde alpha.6: `br.com.adriedson.nexora`. Não restaurar o package antigo.
 - As quatro credenciais de assinatura permanecem opcionais via GitHub Secrets; nunca distribuir keystore nem senhas no repositório.
@@ -36,3 +36,5 @@
 - Alpha.22: templates GGUF detectados e verificados por JNI com conteúdo sintético e Jinja; sem mudança do pin llama.cpp. Template incompatível bloqueia prompts, sem fallback silencioso para outro formato. Configurações exibem origem e resultado; modo personalizado indisponível até suporte seguro. Diagnóstico sem conteúdo de conversas/templating.
 
 - Alpha.23: exportação manual e consentida de conversa completa + diagnóstico técnico (JSON em Downloads/Nexora, sem PDFs), painel de desempenho com terceira opção minimizada e seleção múltipla com botões Material outline.
+
+- Alpha.24: botões Material da seleção múltipla usam `android:insetTop` e `android:insetBottom` (nunca `app:`); CI valida os atributos antes de executar AAPT2. Não modificar JNI/qualidade do modelo nesta correção de compilação.

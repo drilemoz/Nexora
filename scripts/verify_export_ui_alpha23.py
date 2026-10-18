@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regressão estática alpha.23, não substitui Android build/device."""
 from pathlib import Path
+import re
 from xml.etree import ElementTree as ET
 root = Path(__file__).resolve().parents[1]
 ns = '{http://schemas.android.com/apk/res/android}'
@@ -26,5 +27,6 @@ assert 'put("scope", "somente_ultima_resposta_desta_sessao_se_disponivel")' in e
 assert 'pdfs(' not in exports and 'PdfAttachment' not in exports
 assert 'performance_panel_minimized' in chat
 assert 'performanceOverview.visibility = if (performanceIsMinimized) View.GONE else View.VISIBLE' in chat
-assert '0.1.0-alpha.23' in (root/'app/build.gradle.kts').read_text()
+version = re.search(r'versionCode\s*=\s*(\d+)', (root/'app/build.gradle.kts').read_text())
+assert version is not None and int(version.group(1)) >= 23, 'Expect versionCode >= 23'
 print('OK: 14 verificações de exportação, painel, controles e versão')

@@ -47,7 +47,7 @@ object ConversationExport {
                 .put("endReason", native.reason)
         }
         val technical = JSONObject()
-            .put("appVersion", "0.1.0-alpha.23")
+            .put("appVersion", "0.1.0-alpha.24")
             .put("modelRecordedInConversation", chat.model)
             .put("modelActiveAtExport", activeModel ?: JSONObject.NULL)
             .put("modelMayHaveChanged", activeModel != null && chat.model != activeModel)

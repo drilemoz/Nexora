@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regressão local: integração da UI, guardas de privacidade e versionamento."""
 from pathlib import Path
+import re
 import xml.etree.ElementTree as ET
 r=Path(__file__).resolve().parent.parent
 xmls=list((r/'app/src/main/res').rglob('*.xml'))+[r/'app/src/main/AndroidManifest.xml']
@@ -22,7 +23,7 @@ checks={
  'private logs':'"template.detect"' in session and '"template.verify"' in session and '"template.apply"' in session,
  'clipboard':'ClipData.newPlainText' in activity,
  'bootstrap patch':'patch_llama_templates.py' in boot,
- 'version':any(f'versionCode = {v}' in (r/'app/build.gradle.kts').read_text() for v in (22,23)),
+ 'version':int(re.search(r'versionCode\s*=\s*(\d+)', (r/'app/build.gradle.kts').read_text()).group(1)) >= 22,
  'workflow check':'verify_template_alpha22.py' in (r/'.github/workflows/android-apk.yml').read_text(),
 }
 for k,v in checks.items(): print(('OK  ' if v else 'FAIL ')+k)

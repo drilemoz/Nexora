@@ -1,4 +1,4 @@
-# Nexora • v0.1.0-alpha.23 (versionCode 23)
+# Nexora • v0.1.0-alpha.24 (versionCode 24)
 
 **Alpha.18:** correção de privacidade no Logcat (mensagens formatadas e tokens emitidos), contagem de tokens de saída independente dos deslocamentos KV, ajuste de posições dos batches durante deslocamento de contexto e liberação de recursos de load incompleto. A troca/regeneração de chat passa a limpar apenas contexto KV, histórico e sampler, mantendo os pesos GGUF na RAM. Cancelamentos, saída não natural, limpeza de conversa e troca de chats invalidam contexto antes da próxima geração; streaming reconstrói texto no máximo durante atualização da UI. O fluxo de cancelamento ao sair da tela permanece. **Alterações no JNI exigem build/testes reais.**
 
@@ -11,6 +11,11 @@
 **Alpha.14:** nomes de exibição configuráveis em Configurações → Modelos de IA → detalhes → Renomear. O nome original do GGUF não muda, e é mostrado nos detalhes e no toque prolongado no cabeçalho do chat. Ex.: `Qwen3-4B-Q4_K_M.gguf` aparece como `Qwen 3 • 4B`. Restaurar padrão limpa apenas o apelido.
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+### Correção da alpha.24
+- Corrige a falha do workflow #16 em `:app:processDebugResources`: `app:insetTop/app:insetBottom` não são atributos válidos do MaterialButton. Ambos foram migrados para os atributos de framework `android:insetTop/android:insetBottom` em dois botões do histórico.
+- Preserva os insets em `0dp`, dimensões, temas, seleção/exclusão, exportação e painel compacto. Adiciona um teste de regressão de recursos ao GitHub Actions.
+- **Não modifica** o modelo GGUF, o llama.cpp, os parâmetros de inferência nem a qualidade matemática. A compilação Android da alpha.24 e a inferência no aparelho continuam pendentes.
 
 ### Novidades da alpha.23
 - A conversa possui um botão **Exportar** no cabeçalho. Mediante confirmação, salva JSON em `Downloads/Nexora` com mensagens completas, nome do GGUF, versão do app, status de template e snapshot de PSS/RAM/temperatura, além de métricas nativas disponíveis. Após salvar, oferece compartilhamento pelo Android; **não envia dados por conta própria**. Textos de PDF e arquivos GGUF não são exportados.
@@ -98,7 +103,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.23-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.23-apk-debug` (sem Secrets).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.24-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.24-apk-debug` (sem Secrets).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

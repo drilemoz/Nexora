@@ -1,3 +1,10 @@
+# Validação alpha.24 (correção de AAPT2)
+
+- Analisado ZIP de logs "Gerar APK Nexora #16": `:app:processDebugResources` falhou em quatro referências `app:insetTop/app:insetBottom` de `item_conversation.xml`.
+- Fonte alpha.23, corrigidos exclusivamente os namespaces dos insets em dois botões, mantendo dimensões e estilos.
+- Verificação automatizada `scripts/verify_material_buttons_alpha24.py` adicionada ao workflow, valida namespaces e XML; inspeção dos scripts anteriores e integridade ZIP local.
+- Pendentes: compilação Gradle/Android completa, teste visual em aparelho, validação de qualidade dos LLMs e comparação com outro app para mesmo GGUF.
+
 # Validação alpha.23 (código-fonte)
 
 - Base: ZIP alpha.22, versão sequencial 0.1.0-alpha.23 / versionCode 23.

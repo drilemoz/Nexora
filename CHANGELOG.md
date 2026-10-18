@@ -1,3 +1,9 @@
+## 0.1.0-alpha.24 (versionCode 24) • 17/10/2026
+
+- Corrige o erro AAPT2 `attribute insetBottom/insetTop not found` no `item_conversation.xml`: substitui os atributos `app:` por `android:` nos dois `MaterialButton` de seleção de histórico, preservando insets 0dp e a aparência.
+- Adiciona `scripts/verify_material_buttons_alpha24.py` ao CI para detectar futuros usos de `app:inset*` em botões Material.
+- Sem alterações em llama.cpp/JNI, tokenização, cálculo, mensagens, base de dados ou assinatura. Teste AAPT2/Gradle real ainda pendente.
+
 ## 0.1.0-alpha.23 (versionCode 23) • 17/10/2026
 
 - Botão de exportação no topo da conversa e JSON consentido com histórico completo e diagnóstico de inferência, sem texto de PDFs.

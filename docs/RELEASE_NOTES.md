@@ -1,3 +1,11 @@
+# Nexora 0.1.0-alpha.24
+
+**Correção de compilação nos controles Material do histórico.**
+
+- Corrige `:app:processDebugResources` no build #16: os botões Selecionar e Todas/Nenhuma usam agora `android:insetTop="0dp"` e `android:insetBottom="0dp"` no lugar de `app:`, de acordo com o MaterialButton.
+- Mesmas funcionalidades da alpha.23 e mesma aparência esperada, sem alterações no motor GGUF, conversa, PDF ou parâmetros de inferência.
+- A validação local de XML, dos atributos e testes estáticos não equivale a build Android; é necessário reexecutar GitHub Actions e testar no aparelho.
+
 # Nexora 0.1.0-alpha.23
 
 **Exportar conversas com contexto técnico, painel realmente minimizável e seleção consistente com Material.**
