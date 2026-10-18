@@ -22,7 +22,7 @@ checks={
  'private logs':'"template.detect"' in session and '"template.verify"' in session and '"template.apply"' in session,
  'clipboard':'ClipData.newPlainText' in activity,
  'bootstrap patch':'patch_llama_templates.py' in boot,
- 'version':'versionCode = 22' in (r/'app/build.gradle.kts').read_text(),
+ 'version':any(f'versionCode = {v}' in (r/'app/build.gradle.kts').read_text() for v in (22,23)),
  'workflow check':'verify_template_alpha22.py' in (r/'.github/workflows/android-apk.yml').read_text(),
 }
 for k,v in checks.items(): print(('OK  ' if v else 'FAIL ')+k)

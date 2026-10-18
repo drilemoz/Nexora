@@ -63,6 +63,9 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var performanceRamBar: ProgressBar
     private lateinit var performanceRamSegments: LinearLayout
     private lateinit var performanceTitleStatus: TextView
+    private lateinit var performanceMinimize: TextView
+    private lateinit var performanceOverview: LinearLayout
+    private var performanceIsMinimized = false
     private lateinit var performanceToggle: TextView
     private lateinit var performanceDetails: LinearLayout
     private lateinit var performanceModel: TextView
@@ -112,18 +115,30 @@ class ChatActivity : AppCompatActivity() {
         performanceRamSegments = findViewById(R.id.performanceRamSegments)
         performanceTitleStatus = findViewById(R.id.performanceTitleStatus)
         performanceToggle = findViewById(R.id.performanceToggle)
+        performanceMinimize = findViewById(R.id.performanceMinimize)
+        performanceOverview = findViewById(R.id.performanceOverview)
         performanceDetails = findViewById(R.id.performanceDetails)
         performanceModel = findViewById(R.id.performanceModel)
         performanceCpu = findViewById(R.id.performanceCpu)
-        val expanded = prefs.getBoolean("performance_details_expanded", false)
-        updatePerformanceExpansion(expanded)
+        performanceIsMinimized = prefs.getBoolean("performance_panel_minimized", true)
+        updatePerformanceExpansion(prefs.getBoolean("performance_details_expanded", false))
+        updatePerformanceVisibility()
         val togglePanel: (View) -> Unit = {
-            val next = performanceDetails.visibility != View.VISIBLE
-            updatePerformanceExpansion(next)
-            prefs.edit().putBoolean("performance_details_expanded", next).apply()
-            displayMeter()
+            if (performanceIsMinimized) performanceIsMinimized = false
+            else {
+                val next = performanceDetails.visibility != View.VISIBLE
+                updatePerformanceExpansion(next)
+                prefs.edit().putBoolean("performance_details_expanded", next).apply()
+            }
+            prefs.edit().putBoolean("performance_panel_minimized", performanceIsMinimized).apply()
+            updatePerformanceVisibility()
         }
         performanceToggle.setOnClickListener(togglePanel)
+        performanceMinimize.setOnClickListener {
+            performanceIsMinimized = !performanceIsMinimized
+            prefs.edit().putBoolean("performance_panel_minimized", performanceIsMinimized).apply()
+            updatePerformanceVisibility()
+        }
         findViewById<View>(R.id.performanceHeader).setOnClickListener(togglePanel)
         send = findViewById(R.id.sendMessage)
         stop = findViewById(R.id.stopGeneration)
@@ -147,6 +162,7 @@ class ChatActivity : AppCompatActivity() {
             }
         }
         findViewById<View>(R.id.backChat).setOnClickListener { finish() }
+        findViewById<View>(R.id.exportChat).setOnClickListener { requestConversationExport() }
         messages.addAll(store.load(chatId))
         adapter = ChatAdapter(messages) { regenerateLast() }
         list.layoutManager = LinearLayoutManager(this).apply { stackFromEnd = true }
@@ -430,6 +446,54 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestConversationExport() {
+        if (busy || preparingContext) {
+            Toast.makeText(this, "Finalize a geração antes de exportar.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Exportar conversa e diagnóstico?")
+            .setMessage("O JSON incluirá o texto integral das perguntas e respostas, nome do GGUF, " +
+                "parâmetros observados e métricas técnicas disponíveis. Não inclui o texto dos PDFs, " +
+                "caminhos privados ou credenciais. O arquivo ficará em Downloads/Nexora. " +
+                "Compartilhe somente se concordar com a divulgação das mensagens.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Exportar") { _, _ ->
+                lifecycleScope.launch {
+                    val result = withContext(Dispatchers.IO) { runCatching {
+                        val data = DeviceSampler.capture(applicationContext)
+                        val stored = store.load(chatId)
+                        val item = store.get(chatId) ?: error("Conversa não encontrada")
+                        val report = ConversationExport.build(item, stored, ModelSession.currentName(),
+                            ModelSession.cachedTemplateReport(), lastNativeStats,
+                            data, thinking, contextReady)
+                        ConversationExport.save(applicationContext, item, report)
+                    } }
+                    result.onSuccess { uri ->
+                        DiagnosticEvents.record(this@ChatActivity, "conversation.export", "format=json messages_exported")
+                        MaterialAlertDialogBuilder(this@ChatActivity)
+                            .setTitle("Conversa exportada")
+                            .setMessage("Arquivo salvo em Downloads/Nexora. Você pode compartilhar o JSON para análise, " +
+                                "mas ele contém suas perguntas e respostas.")
+                            .setNegativeButton("Fechar", null)
+                            .setPositiveButton("Compartilhar") { _, _ ->
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/json"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    clipData = android.content.ClipData.newUri(contentResolver,
+                                        "Conversa e diagnóstico Nexora", uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                startActivity(Intent.createChooser(sendIntent, "Compartilhar diagnóstico da conversa"))
+                            }.show()
+                    }.onFailure {
+                        Toast.makeText(this@ChatActivity, "Falha ao exportar conversa: ${it.javaClass.simpleName}", Toast.LENGTH_LONG).show()
+                        DiagnosticEvents.record(this@ChatActivity, "conversation.export.error", "type=${it.javaClass.simpleName}", "ERROR")
+                    }
+                }
+            }.show()
+    }
+
     private fun save() {
         runCatching { store.save(chatId,messages,ModelSession.currentName()) }
             .onFailure { status.text = "Não foi possível salvar o histórico: ${it.localizedMessage?.take(100)}" }
@@ -442,6 +506,15 @@ class ChatActivity : AppCompatActivity() {
         stop.visibility = if (busy) View.VISIBLE else View.GONE
         send.visibility = if (busy) View.GONE else View.VISIBLE
         updateMode()
+    }
+
+    /** Estado mínimo esconde também as métricas resumidas; expansão continua independente. */
+    private fun updatePerformanceVisibility() {
+        performanceOverview.visibility = if (performanceIsMinimized) View.GONE else View.VISIBLE
+        performanceMinimize.text = if (performanceIsMinimized) "□" else "−"
+        performanceMinimize.contentDescription = if (performanceIsMinimized)
+            "Restaurar painel de desempenho" else "Minimizar painel de desempenho"
+        performanceToggle.visibility = if (performanceIsMinimized) View.GONE else View.VISIBLE
     }
 
     private fun updatePerformanceExpansion(expanded: Boolean) {

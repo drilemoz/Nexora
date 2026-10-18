@@ -1,3 +1,10 @@
+## 0.1.0-alpha.23 (versionCode 23) • 17/10/2026
+
+- Botão de exportação no topo da conversa e JSON consentido com histórico completo e diagnóstico de inferência, sem texto de PDFs.
+- Modo minimizado para o painel de desempenho, independente de expandir os detalhes; recolhe métricas e barra de RAM.
+- Ações Selecionar e Todas/Nenhuma atualizadas para Material outlined, com toque mais consistente nos temas.
+- Versões e documentos sincronizados; sem mudanças na engine.
+
 ## 0.1.0-alpha.22 (versionCode 22) • 17/10/2026
 - Integração com os templates embutidos no GGUF via llama.cpp fixado; Jinja aplicado quando validação sintética de papéis e histórico passa; preservação de marcadores e proteção de BOS duplicado.
 - Detecção e estado reportados por JNI; proíbe fallback silencioso quando o template existe mas falha. Sem template: status não aplicado e compatibilidade legada explicitada.

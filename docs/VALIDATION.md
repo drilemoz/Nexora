@@ -1,3 +1,11 @@
+# Validação alpha.23 (código-fonte)
+
+- Base: ZIP alpha.22, versão sequencial 0.1.0-alpha.23 / versionCode 23.
+- Alterações restritas à interface, exportação manual consentida com contexto técnico e metadados.
+- Verificação sintática Kotlin/XML, pacote ZIP, filename seguro, layout e código de exportação por inspeção automatizada.
+- Exportação não inclui texto extraído de PDFs; mensagens inteiras só saem mediante confirmação local.
+- Compilação JNI/Android, compatibilidade do compartilhamento MediaStore e validação em aparelho: pendentes até build CI ou teste físico.
+
 # Validação alpha.22 (código-fonte)
 
 - Base: ZIP alpha.21 e pin upstream llama.cpp `ea0c4c2c85fb183ec0fbd30a1af4e4275a18a064`; versionName 0.1.0-alpha.22 / versionCode 22.

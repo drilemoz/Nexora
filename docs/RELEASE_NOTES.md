@@ -1,3 +1,12 @@
+# Nexora 0.1.0-alpha.23
+
+**Exportar conversas com contexto técnico, painel realmente minimizável e seleção consistente com Material.**
+
+- Nova ação Exportar no topo do chat: confirma a presença de mensagens pessoais, salva um JSON de perguntas e respostas completas em Downloads/Nexora, oferece compartilhamento voluntário via Android. Inclui nome GGUF, snapshot de RAM/temperatura, estado do template e estatísticas nativas da última geração quando presentes. Não incorpora texto dos PDFs nem registros completos privados.
+- Painel Desempenho local com três estados: minimizado (somente faixa), resumido e expandido. Botão independente de minimizar/restaurar junto à seta; padrão inicial minimizado para liberar área de leitura. Preferência persiste.
+- Selecionar e Todas/Nenhuma agora usam Material OutlinedButtons com temas existentes. Exclusão em lote e confirmações preservadas.
+- Sem alteração em GGUF, JNI, SQLite, rede ou assinatura. Testes em aparelho e build Android devem validar visual e compartilhamento.
+
 # Nexora 0.1.0-alpha.22
 
 **Templates GGUF automáticos e diagnóstico verificável.**

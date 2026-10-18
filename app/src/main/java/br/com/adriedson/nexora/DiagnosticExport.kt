@@ -14,10 +14,14 @@ import java.util.Locale
 object DiagnosticExport {
     fun displayName(time:Long):String = "Diagnóstico Nexora " + SimpleDateFormat("dd-MM-yyyy HH'h'mm", Locale.forLanguageTag("pt-BR")).format(Date(time))
     fun fileName(time:Long):String = displayName(time) + "-" + SimpleDateFormat("ss-SSS",Locale.ROOT).format(Date(time)) + ".json"
-    fun save(context: Context, json:String, time:Long=System.currentTimeMillis()): Uri {
+    fun save(context: Context, json:String, time:Long=System.currentTimeMillis()): Uri =
+        saveNamed(context, json, fileName(time))
+
+    fun saveNamed(context: Context, json: String, name: String): Uri {
+        require(name.matches(Regex("[a-zA-Z0-9._-]{1,125}\\.json"))) { "Nome inválido" }
         require(Build.VERSION.SDK_INT >= 29) { "Exportação direta requer Android 10 ou superior" }
         val values=ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME,fileName(time))
+            put(MediaStore.MediaColumns.DISPLAY_NAME,name)
             put(MediaStore.MediaColumns.MIME_TYPE,"application/json")
             put(MediaStore.MediaColumns.RELATIVE_PATH,Environment.DIRECTORY_DOWNLOADS+"/Nexora/")
             put(MediaStore.MediaColumns.IS_PENDING,1)
