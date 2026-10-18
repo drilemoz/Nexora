@@ -30,6 +30,7 @@ sealed class ModelLoadState {
 /** Executa um modelo por vez e registra o último GGUF carregado com sucesso. */
 object ModelSession {
     @Volatile private var path: String? = null
+    @Volatile private var latestTemplateInfo: ModelTemplateReport? = null
     @Volatile private var activeChat: String? = null
     @Volatile private var contextDirty = false
     private val sessionMutex = Mutex()
@@ -41,6 +42,19 @@ object ModelSession {
     val loadState: StateFlow<ModelLoadState> = mutableLoadState.asStateFlow()
 
     fun currentPath(): String? = path
+    fun cachedTemplateReport(): ModelTemplateReport? = latestTemplateInfo
+
+    /** Formata e tokeniza apenas quatro mensagens sintéticas em uma chamada serializada. */
+    suspend fun verifyTemplate(context: Context): ModelTemplateReport? = withContext(Dispatchers.IO) {
+        sessionMutex.withLock {
+            if (!isReady(context)) return@withLock null
+            val parsed = ModelTemplateReport.parse(engine(context).templateReport(true))
+            latestTemplateInfo = parsed
+            DiagnosticEvents.record(context, "template.verify", "state=${parsed?.application ?: "nao_verificado"} result=${parsed?.error ?: "invalid"}",
+                if (parsed?.application == "incompativel") "WARN" else "INFO")
+            parsed
+        }
+    }
     fun activeConversationId(): String? = activeChat
     /** Após cancelamento, erro ou limpeza, nenhuma geração pode reutilizar o KV antigo. */
     fun markContextDirty(chatId: String) {
@@ -141,18 +155,25 @@ object ModelSession {
                     else -> Unit
                 }
                 path = null
+                latestTemplateInfo = null
                 activeChat = null
                 contextDirty = false
                 if (cancelLoad.get()) throw CancellationException("Carregamento cancelado")
                 val inference = ModelInferencePreferences.get(context, model)
                 e.configureModel(inference.contextSize,inference.threads,inference.temperature,
                     inference.topP,inference.topK,inference.minP,inference.repeatPenalty)
+                DiagnosticEvents.record(context, "template.select", "mode=auto scope=current_gguf")
                 e.loadModel(model.absolutePath)
                 if (cancelLoad.get()) {
                     e.cleanUp()
                     throw CancellationException("Carregamento cancelado após liberação do motor")
                 }
                 path = model.absolutePath
+                latestTemplateInfo = ModelTemplateReport.parse(e.templateReport(false))
+                val template = latestTemplateInfo
+                DiagnosticEvents.record(context, "template.detect", "origin=${template?.origin ?: "unknown"} family=${template?.family ?: "unknown"}")
+                DiagnosticEvents.record(context, "template.apply", "state=${template?.application ?: "nao_verificado"} result=${template?.error ?: "invalid"}",
+                    if (template?.application == "incompativel") "WARN" else "INFO")
                 activeChat = null
                 contextDirty = false
                 val elapsed = SystemClock.elapsedRealtime() - startMs
@@ -161,6 +182,7 @@ object ModelSession {
                 mutableLoadState.value = ModelLoadState.Ready(model.name)
             } catch (e: CancellationException) {
                 path = null
+                latestTemplateInfo = null
                 activeChat = null
                 contextDirty = false
                 mutableLoadState.value = ModelLoadState.Idle
@@ -175,6 +197,7 @@ object ModelSession {
                 } catch (_: Exception) { /* preservar falha original no diagnóstico */ }
                 DiagnosticEvents.record(context, "model.load.error", "name=${model.name.take(95)} type=${e.javaClass.simpleName}", "ERROR")
                 path = null
+                latestTemplateInfo = null
                 activeChat = null
                 contextDirty = false
                 mutableLoadState.value = ModelLoadState.Problem(model.name,
@@ -204,6 +227,7 @@ object ModelSession {
                 else -> Unit
             }
             path = null
+            latestTemplateInfo = null
             activeChat = null
             contextDirty = false
             DiagnosticEvents.record(context, "model.unload")

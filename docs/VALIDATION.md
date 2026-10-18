@@ -1,3 +1,10 @@
+# Validação alpha.22 (código-fonte)
+
+- Base: ZIP alpha.21 e pin upstream llama.cpp `ea0c4c2c85fb183ec0fbd30a1af4e4275a18a064`; versionName 0.1.0-alpha.22 / versionCode 22.
+- Revisão estática da API pinned (`llama_model_chat_template`, `common_chat_templates_apply`, tokenização, histórico). `scripts/patch_llama_templates.py` roda após as patches anteriores e `scripts/verify_template_alpha22.py` bloqueia ausência de invariantes.
+- Testes locais de parser e relatório de enums em `ModelTemplateReportTest.kt`; XML e parsing Kotlin. Resultados locais: 7 testes novos Kotlin/JVM aprovados (runner com asserções), 62 arquivos Kotlin analisados sem erros sintáticos via parser PSI, 47 XML bem formados, scripts Python compilados e Bash validado. `scripts/verify_template_ui_alpha22.py` aprovou 12 verificações estáticas da UI, rotas e estado. Estes testes não executam o motor JNI.
+- **Pendentes:** checkout bootstrap real, compilação JNI/Gradle Android completa, inferência com GGUF físico, Qwen3/Gemma3/SmolLM3/Llama/Phi, testes instrumentados com 4+ turnos, pressão de RAM e raciocínio. Suporte por família não pode ser declarado somente por heurística de marcadores.
+
 # Validação 0.1.0-alpha.21 (código-fonte)
 
 - Base: ZIP alpha.20, com `versionName 0.1.0-alpha.21` e `versionCode 21` sincronizados.

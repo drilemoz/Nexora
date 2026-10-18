@@ -13,6 +13,7 @@
       android:usesCleartextTraffic="false">
       <activity android:name=".DiagnosticsActivity" android:exported="false"/>
       <activity android:name=".ModelsActivity" android:exported="false"/>
+      <activity android:name=".ModelCompatibilityActivity" android:exported="false"/>
       <activity android:name=".SettingsActivity" android:exported="false"/>
       <activity android:name=".ThemeActivity" android:exported="false"/>
       <activity android:name=".ChatActivity" android:exported="false"/>

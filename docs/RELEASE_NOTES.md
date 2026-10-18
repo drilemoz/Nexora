@@ -1,3 +1,13 @@
+# Nexora 0.1.0-alpha.22
+
+**Templates GGUF automáticos e diagnóstico verificável.**
+
+- Usa template do próprio GGUF via llama.cpp fixado. Adiciona verificação sintética dos papéis e do histórico, sem gerar resposta. Sem template declarado: identifica modo legado (não aplicado); template incompatível: bloqueia o envio.
+- Nova tela Configurações → Compatibilidade dos modelos com nome de arquivo completo, identificação, origem, aplicação, revisão do motor, resultado, botão Verificar template e Copiar diagnóstico.
+- Jinja do motor é usado nos turnos quando a verificação é aprovada; tokenização impede BOS duplicado. Modo de raciocínio Qwen continua sem alterações, não verificado semanticamente nesta validação.
+- Personalizado continua desabilitado enquanto não houver aplicação segura de overrides arbitrários. Não aplica template de um GGUF a outro. Eventos guardam apenas códigos, sem textos privados.
+- Validações locais, testes NDK/Android e ensaios em modelos reais descritos em `docs/VALIDATION.md`.
+
 # Nexora 0.1.0-alpha.21
 
 **Modelo ativo na tela inicial, datas reais e exclusão em lote.**

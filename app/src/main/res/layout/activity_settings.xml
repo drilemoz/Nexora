@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="?attr/uiSurface" android:paddingStart="18dp" android:paddingEnd="18dp">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:background="?attr/uiSurface" android:paddingStart="18dp" android:paddingEnd="18dp">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingBottom="24dp">
  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:paddingTop="12dp" android:paddingBottom="20dp"><ImageButton android:id="@+id/backFromSettings" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_arrow_back" android:tint="?attr/uiLabel" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Voltar"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Configurações" android:textStyle="bold" android:textSize="23sp" android:textColor="?attr/uiLabel" android:layout_marginStart="4dp"/></LinearLayout>
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="APARÊNCIA" android:textSize="12sp" android:textStyle="bold" android:textColor="?attr/uiAccent" android:letterSpacing="0.14" android:paddingBottom="12dp"/>
  <com.google.android.material.card.MaterialCardView android:id="@+id/chooseTheme" android:layout_width="match_parent" android:layout_height="wrap_content" android:clickable="true" android:focusable="true" app:cardCornerRadius="20dp" app:cardElevation="0dp" app:strokeWidth="1dp" app:strokeColor="?attr/uiBorder" app:cardBackgroundColor="?attr/uiPanel">
@@ -20,6 +21,13 @@
    <ImageView android:layout_width="25dp" android:layout_height="25dp" android:src="@drawable/ic_chevron" android:tint="?attr/uiAccent" android:contentDescription="Abrir modelos"/>
   </LinearLayout>
  </com.google.android.material.card.MaterialCardView>
+ <com.google.android.material.card.MaterialCardView android:id="@+id/openModelCompatibility" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:clickable="true" android:focusable="true" app:cardCornerRadius="20dp" app:cardElevation="0dp" app:cardBackgroundColor="?attr/uiPanel" app:strokeWidth="1dp" app:strokeColor="?attr/uiBorder">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="18dp">
+   <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_brain" android:tint="?attr/uiAccent" android:contentDescription="Compatibilidade de modelos"/>
+   <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="12dp"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Compatibilidade dos modelos" android:textColor="?attr/uiLabel" android:textStyle="bold" android:textSize="16sp"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Chat Templates, suporte GGUF e diagnóstico" android:textColor="?attr/uiMuted" android:textSize="12sp"/></LinearLayout>
+   <ImageView android:layout_width="25dp" android:layout_height="25dp" android:src="@drawable/ic_chevron" android:tint="?attr/uiAccent" android:contentDescription="Abrir compatibilidade"/>
+  </LinearLayout>
+ </com.google.android.material.card.MaterialCardView>
  <com.google.android.material.card.MaterialCardView android:id="@+id/autoloadCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" app:cardCornerRadius="20dp" app:cardElevation="0dp" app:cardBackgroundColor="?attr/uiPanel" app:strokeWidth="1dp" app:strokeColor="?attr/uiBorder">
   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="16dp">
    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
@@ -31,3 +39,4 @@
  </com.google.android.material.card.MaterialCardView>
  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Escolha o visual em uma tela exclusiva. As preferências ficam salvas neste dispositivo." android:textSize="13sp" android:textColor="?attr/uiMuted" android:lineSpacingExtra="3dp" android:layout_marginTop="18dp"/>
 </LinearLayout>
+</ScrollView>

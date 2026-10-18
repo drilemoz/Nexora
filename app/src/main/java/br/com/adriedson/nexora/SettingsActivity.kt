@@ -18,6 +18,9 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(this, ThemeActivity::class.java))
         }
         findViewById<View>(R.id.manageAiModels).setOnClickListener { startActivity(Intent(this,ModelsActivity::class.java)) }
+        findViewById<View>(R.id.openModelCompatibility).setOnClickListener {
+            startActivity(Intent(this, ModelCompatibilityActivity::class.java))
+        }
         findViewById<SwitchCompat>(R.id.autoLoadSwitch).apply {
             isChecked = ModelStartup.enabled(this@SettingsActivity)
             setOnCheckedChangeListener { _, enabled -> ModelStartup.setEnabled(this@SettingsActivity, enabled) }

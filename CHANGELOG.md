@@ -1,3 +1,9 @@
+## 0.1.0-alpha.22 (versionCode 22) • 17/10/2026
+- Integração com os templates embutidos no GGUF via llama.cpp fixado; Jinja aplicado quando validação sintética de papéis e histórico passa; preservação de marcadores e proteção de BOS duplicado.
+- Detecção e estado reportados por JNI; proíbe fallback silencioso quando o template existe mas falha. Sem template: status não aplicado e compatibilidade legada explicitada.
+- Nova tela Configurações → Compatibilidade dos modelos, Verificar template e Copiar diagnóstico seguro. Modo Personalizado bloqueado por falta de caminho arbitrário validado.
+- Eventos somente com enums, sem conteúdo privado; validação estática e unitária; compilação Android e teste com GGUF real pendentes.
+
 ## 0.1.0-alpha.21 (versionCode 21) • 17/10/2026
 - Na tela inicial, mostra o GGUF realmente carregado sob o nome Nexora, com apelido de apresentação e estados de carregamento/ausência.
 - Controles compactos de seleção e lixeira ao lado do primeiro cabeçalho da lista de conversas: selecionar várias por toque ou pressão longa, marcar/desmarcar todas as visíveis e cancelar.

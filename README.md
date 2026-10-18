@@ -1,4 +1,4 @@
-# Nexora • v0.1.0-alpha.21 (versionCode 21)
+# Nexora • v0.1.0-alpha.22 (versionCode 22)
 
 **Alpha.18:** correção de privacidade no Logcat (mensagens formatadas e tokens emitidos), contagem de tokens de saída independente dos deslocamentos KV, ajuste de posições dos batches durante deslocamento de contexto e liberação de recursos de load incompleto. A troca/regeneração de chat passa a limpar apenas contexto KV, histórico e sampler, mantendo os pesos GGUF na RAM. Cancelamentos, saída não natural, limpeza de conversa e troca de chats invalidam contexto antes da próxima geração; streaming reconstrói texto no máximo durante atualização da UI. O fluxo de cancelamento ao sair da tela permanece. **Alterações no JNI exigem build/testes reais.**
 
@@ -11,6 +11,13 @@
 **Alpha.14:** nomes de exibição configuráveis em Configurações → Modelos de IA → detalhes → Renomear. O nome original do GGUF não muda, e é mostrado nos detalhes e no toque prolongado no cabeçalho do chat. Ex.: `Qwen3-4B-Q4_K_M.gguf` aparece como `Qwen 3 • 4B`. Restaurar padrão limpa apenas o apelido.
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+### Novidades da alpha.22
+- **Configurações → Compatibilidade dos modelos** exibe GGUF ativo (arquivo completo), identificação por marcadores do template, origem, aplicação comprovada, SHA fixado do llama.cpp e verificação técnica.
+- O llama.cpp já identifica `tokenizer.chat_template`; a nova camada confere formatação de papéis e histórico sintético em Jinja antes de declarar ativo, evitando fallback cruzado. `Verificar template` não gera texto com o modelo. `Copiar diagnóstico` não compartilha prompts, conteúdos de PDF, caminhos ou template bruto.
+- Template GGUF incompatível bloqueia envio em vez de trocar silenciosamente para outro formato. Ausência de metadados é marcada **não aplicado** (modo legado), nunca como comprovadamente compatível.
+- **Automático** é o padrão; **Personalizado** aparece desabilitado até suporte seguro. Os modelos são inspecionados de forma independente ao carregar. Ver `docs/TEMPLATE_COMPATIBILITY.md`.
+- Testes estáticos/JVM não substituem compilação JNI e testes reais de Qwen3/Gemma3/SmolLM3/Llama/Phi, multirrodada, memória e raciocínio.
 
 ### Novidades da alpha.21
 - Tela inicial identifica o **modelo atualmente carregado** logo abaixo do nome Nexora, respeitando o nome de apresentação. Durante a carga, informa o modelo em carregamento; quando não há GGUF carregado, informa isso explicitamente.
@@ -85,7 +92,7 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.21-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.21-apk-debug` (sem Secrets).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.22-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.22-apk-debug` (sem Secrets).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

@@ -62,3 +62,6 @@ python3 "$ROOT/scripts/patch_llama_metrics.py" "$DIR/examples/llama.android"
 python3 "$ROOT/scripts/patch_llama_preferences.py" "$DIR/examples/llama.android"
 # Alpha.18: proteção do Logcat, deslocamento KV, limite efetivo e limpeza sem recarregar GGUF.
 python3 "$ROOT/scripts/patch_llama_safety.py" "$DIR/examples/llama.android"
+
+# Alpha.22: template automatico nativo por GGUF com verificacao sintética.
+python3 "$ROOT/scripts/patch_llama_templates.py" "$DIR/examples/llama.android"
