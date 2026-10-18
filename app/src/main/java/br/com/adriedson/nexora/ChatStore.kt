@@ -56,6 +56,22 @@ class ChatStore(context: Context) : SQLiteOpenHelper(context.applicationContext,
     }
     fun pin(id: String, pinned: Boolean) { writableDatabase.update("conversations",values("pinned" to if(pinned)1 else 0),"id=?",arrayOf(id)) }
     fun delete(id: String) { writableDatabase.delete("conversations","id=?",arrayOf(id)) }
+    /** Exclusão em lote atômica; FKs removem mensagens e PDFs sem tocar nos GGUF. */
+    fun deleteMany(ids: Collection<String>): Int {
+        if (ids.isEmpty()) return 0
+        val db = writableDatabase
+        db.beginTransaction()
+        return try {
+            var removed = 0
+            for (id in ids.distinct()) removed += db.delete("conversations", "id=?", arrayOf(id))
+            db.setTransactionSuccessful()
+            removed
+        } finally { db.endTransaction() }
+    }
+    fun deleteAll(): Int = writableDatabase.delete("conversations", null, null)
+    fun count(): Int = readableDatabase.rawQuery("SELECT COUNT(*) FROM conversations", null).use { cursor ->
+        if (cursor.moveToFirst()) cursor.getInt(0) else 0
+    }
     fun load(id: String): MutableList<ChatMessage> = readableDatabase.rawQuery("SELECT role,content FROM messages WHERE conversation_id=? ORDER BY id",arrayOf(id)).use { c ->
         buildList { while(c.moveToNext()) add(ChatMessage(c.getString(0),c.getString(1))) }.toMutableList()
     }

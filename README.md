@@ -1,4 +1,4 @@
-# Nexora • v0.1.0-alpha.20 (versionCode 20)
+# Nexora • v0.1.0-alpha.21 (versionCode 21)
 
 **Alpha.18:** correção de privacidade no Logcat (mensagens formatadas e tokens emitidos), contagem de tokens de saída independente dos deslocamentos KV, ajuste de posições dos batches durante deslocamento de contexto e liberação de recursos de load incompleto. A troca/regeneração de chat passa a limpar apenas contexto KV, histórico e sampler, mantendo os pesos GGUF na RAM. Cancelamentos, saída não natural, limpeza de conversa e troca de chats invalidam contexto antes da próxima geração; streaming reconstrói texto no máximo durante atualização da UI. O fluxo de cancelamento ao sair da tela permanece. **Alterações no JNI exigem build/testes reais.**
 
@@ -11,6 +11,13 @@
 **Alpha.14:** nomes de exibição configuráveis em Configurações → Modelos de IA → detalhes → Renomear. O nome original do GGUF não muda, e é mostrado nos detalhes e no toque prolongado no cabeçalho do chat. Ex.: `Qwen3-4B-Q4_K_M.gguf` aparece como `Qwen 3 • 4B`. Restaurar padrão limpa apenas o apelido.
 
 Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downloads opcionais. **Não usa servidor para inferência.**
+
+### Novidades da alpha.21
+- Tela inicial identifica o **modelo atualmente carregado** logo abaixo do nome Nexora, respeitando o nome de apresentação. Durante a carga, informa o modelo em carregamento; quando não há GGUF carregado, informa isso explicitamente.
+- No primeiro cabeçalho do histórico (HOJE, data ou FIXADAS), **Selecionar** inicia marcação de várias conversas; **Todas** marca/desmarca as exibidas; **Cancelar** encerra seleção. Pressão longa em uma conversa também inicia a seleção.
+- A lixeira do cabeçalho exclui apenas as selecionadas no modo seleção, ou **todas** quando o modo está inativo. Sempre solicita confirmação, informa a quantidade e avisa que mensagens e anexos PDF serão removidos; **GGUF não são excluídos**.
+- Histórico não agrupa mais em “ANTERIORES”: para mensagens dos dias anteriores, mostra cada data **dd/MM/aaaa** no horário local; HOJE é reservado ao dia corrente. Conversas fixadas preservam grupo próprio e incluem a data no subtítulo.
+- As datas mudam ao chegar a meia-noite com a tela aberta ou ao retornar ao aplicativo. Nenhuma migração de SQLite, motor nativo ou assinatura.
 
 ### Interface da alpha.20
 - O painel **Desempenho local** agora fica logo após **IA LOCAL ATIVA**, no topo da conversa, antes das mensagens. O campo de edição, anexos e avisos continuam fixos na parte inferior.
@@ -72,13 +79,13 @@ Android nativo Kotlin, modelos GGUF locais via llama.cpp, com catálogo de downl
 2. Configurações → **Modelos de IA** → Baixar ou Importar GGUF → Carregar. O modelo é único em memória.
 3. Após o carregamento, a tela inicial é aberta automaticamente. Toque Nova conversa ou em uma já existente. O modelo escolhido aparece no cabeçalho do chat, que permite abrir o gerenciador se necessário.
 4. Toque no clipe 📎 para selecionar um PDF com texto (até 12 MiB). Aguarde a extração; um chip com nome/páginas aparecerá. Pergunte sobre o PDF. Apenas o texto relevante e limitado é oferecido ao modelo; ele pode errar.
-5. Abra a busca pela lupa e pesquise títulos ou conteúdo, ou o menu de cada chat para fixar, renomear e excluir, com confirmação para exclusão.
+5. Abra a busca pela lupa e pesquise títulos ou conteúdo; para apagar várias conversas, use **Selecionar** ao lado do cabeçalho do histórico, marque as desejadas e toque na lixeira. Fora desse modo, a lixeira exclui todas, sempre após confirmação. O menu de cada chat também permite fixar, renomear ou excluir individualmente.
 
 ## Build e requisitos
 
 - Android 13+ / ARM64, Java 17, Android API 36, NDK 29, CMake 3.31.6.
 - ZIP apenas do código Kotlin/recursos e scripts; `scripts/bootstrap.sh` prepara o wrapper, catálogo Gradle e motor llama.cpp fixado em commit. Compilação requer internet e dependência PDFBox-Android em Maven Central.
-- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.20-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.20-apk-debug` (sem Secrets).
+- GitHub Actions **Gerar APK Nexora**: `Nexora-v0.1.0-alpha.21-apk-release-assinado` (com Secrets) **ou** `Nexora-v0.1.0-alpha.21-apk-debug` (sem Secrets).
 - Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Nunca inserir credenciais nem pesos no repositório.
 
 ## Limitações

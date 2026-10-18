@@ -1,3 +1,13 @@
+# Validação 0.1.0-alpha.21 (código-fonte)
+
+- Base: ZIP alpha.20, com `versionName 0.1.0-alpha.21` e `versionCode 21` sincronizados.
+- [OK] Teste de hierarquia XML em `scripts/verify_history_alpha21.py`: modelo sob título, ações no primeiro cabeçalho, checkboxes e rotas de exclusão com confirmação.
+- [OK] Compilação JVM isolada e 8 cenários de calendário: HOJE, datas anteriores, cruzamento de ano, datas futuras, fuso America/Sao_Paulo e fixadas. Adicionados 7 testes JUnit ao app e executados localmente em JVM isolada com stub de asserção; o runner JUnit oficial permanece pendente.
+- [OK] Teste SQLite em memória com 1000 conversas, 700 exclusões em lote e exclusão de todas: cascata de mensagens e textos PDF e consistência. Esse teste reproduz o esquema/SQL mas não executa o wrapper Android.
+- [OK] Parser PSI Kotlin: 59 arquivos, nenhum erro sintático; recursos XML, YAML do CI e scripts validados.
+- [PENDENTE] Build Gradle/Android completo, execução instrumentada do ChatStore Android e inspeção da UI no aparelho (tema claro/escuro, 2 fontes, virada do dia, pesquisa e exclusões reais).
+- Inferência GGUF, assinatura e esquema SQLite sem alteração.
+
 # Validação 0.1.0-alpha.20 (código-fonte)
 
 - Base: ZIP alpha.19; alteração pontual da posição do cartão no `activity_chat.xml`.

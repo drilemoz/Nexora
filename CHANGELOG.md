@@ -1,3 +1,11 @@
+## 0.1.0-alpha.21 (versionCode 21) • 17/10/2026
+- Na tela inicial, mostra o GGUF realmente carregado sob o nome Nexora, com apelido de apresentação e estados de carregamento/ausência.
+- Controles compactos de seleção e lixeira ao lado do primeiro cabeçalho da lista de conversas: selecionar várias por toque ou pressão longa, marcar/desmarcar todas as visíveis e cancelar.
+- Exclusão múltipla transacional e opção separada de excluir todas as conversas, ambas com confirmação e contagem; FK SQLite remove mensagens e PDFs associados, mantendo modelos GGUF.
+- Cabeçalhos do histórico por dia local: HOJE apenas no dia corrente e dd/MM/aaaa para cada dia anterior. Conversas fixadas também incluem a data no subtítulo. Virada da meia-noite atualiza agrupamento enquanto a tela está visível.
+- Nova bateria de testes para datas/fuso, regressão de layout e exclusões SQLite por cascata. Nenhuma modificação no schema do banco, inferência, permissões ou assinatura.
+- Build Android/Gradle completo e validação UI em aparelho pendentes.
+
 ## 0.1.0-alpha.20 (versionCode 20) • 17/10/2026
 - Interface de conversa: painel Desempenho local movido do rodapé para abaixo do indicador IA LOCAL ATIVA, antes da lista de mensagens.
 - Mantidos status, velocidade, PSS, bateria, RAM, pressão térmica e expansão de detalhes, sem modificar o monitoramento ou o armazenamento.

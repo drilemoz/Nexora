@@ -1,3 +1,13 @@
+# Nexora 0.1.0-alpha.21
+
+**Modelo ativo na tela inicial, datas reais e exclusão em lote.**
+
+- Abaixo do título **Nexora** aparece o apelido/nome do GGUF carregado, ou seu estado de carregamento/ausência.
+- Ao lado do primeiro título do histórico (Hoje, data ou Fixadas) aparecem **Selecionar** e a lixeira; ao selecionar, é possível marcar várias conversas, marcar/desmarcar todas as listadas e excluir somente as selecionadas.
+- Fora do modo de seleção, a lixeira exclui todo o histórico. Ambas as operações exigem confirmação e informam que mensagens e textos de PDF também serão eliminados, **sem apagar modelos GGUF**.
+- Separação diária do histórico no horário local: HOJE apenas no dia vigente e datas dd/MM/aaaa para os demais; fixadas mantêm destaque e exibem dia no subtítulo. Atualiza após meia-noite e ao retomar a atividade.
+- SQLite preserva schema v1; não houve alteração em modelos, código nativo, threads, consumo ou assinatura. Compilação real Android, testes de interação, temas e performance ainda pendentes.
+
 # Nexora 0.1.0-alpha.20
 
 **Painel de desempenho realocado para o topo do chat.**
